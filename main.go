@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/robertkrimen/otto"
+	"github.com/hajimehoshi/gophermv/vm"
 	"golang.org/x/net/html"
 )
 
@@ -29,21 +29,18 @@ const (
 	indexHTMLFile  = "index.html"
 )
 
-var (
-	vm = otto.New()
-)
-
 type Script struct {
 	Src string
 }
 
-func (s *Script) Exec(path string) error {
+func (s *Script) Exec(path string, vm *vm.VM) error {
+	fmt.Println(s.Src)
 	f, err := os.Open(filepath.Join(path, s.Src))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if _, err := vm.Run(f); err != nil {
+	if err := vm.Exec(f); err != nil {
 		return err
 	}
 	return nil
@@ -89,8 +86,12 @@ func process(path string) error {
 			scripts = append(scripts, s)
 		}
 	}
+	vm, err := vm.New()
+	if err != nil {
+		return err
+	}
 	for _, s := range scripts {
-		if err := s.Exec(path); err != nil {
+		if err := s.Exec(path, vm); err != nil {
 			return err
 		}
 	}
