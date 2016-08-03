@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/robertkrimen/otto"
 	"golang.org/x/net/html"
 )
 
@@ -28,8 +29,24 @@ const (
 	indexHTMLFile  = "index.html"
 )
 
+var (
+	vm = otto.New()
+)
+
 type Script struct {
 	Src string
+}
+
+func (s *Script) Exec(path string) error {
+	f, err := os.Open(filepath.Join(path, s.Src))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := vm.Run(f); err != nil {
+		return err
+	}
+	return nil
 }
 
 func process(path string) error {
@@ -73,7 +90,9 @@ func process(path string) error {
 		}
 	}
 	for _, s := range scripts {
-		fmt.Println(s.Src)
+		if err := s.Exec(path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
