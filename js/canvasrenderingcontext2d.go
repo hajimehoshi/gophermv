@@ -15,26 +15,28 @@
 package js
 
 import (
-	"fmt"
-
 	"github.com/robertkrimen/otto"
 )
 
-func htmlCanvasElement_getContext(call otto.FunctionCall) (otto.Value, error) {
-	mode, err := call.Argument(0).ToString()
+func canvasRenderingContext2D_setFillStyle(call otto.FunctionCall) (otto.Value, error) {
+	value, err := call.Argument(0).ToString()
 	if err != nil {
 		return otto.Value{}, err
 	}
-	switch mode {
-	case "2d":
-		return call.Otto.Run("new CanvasRenderingContext2D()")
-	default:
-		return otto.Value{}, fmt.Errorf("vm: not implemented canvas mode %s", mode)
-	}
+	_ = value
+	return otto.Value{}, nil
 }
 
-func (vm *VM) initHTMLCanvasElement() error {
-	const className = "HTMLCanvasElement"
+func canvasRenderingContext2D_getImageData(call otto.FunctionCall) (otto.Value, error) {
+	return otto.Value{}, nil
+}
+
+func canvasRenderingContext2D_fillRect(call otto.FunctionCall) (otto.Value, error) {
+	return otto.Value{}, nil
+}
+
+func (vm *VM) initCanvasRenderingContext2D() error {
+	const className = "CanvasRenderingContext2D"
 	class, err := vm.otto.Object("(function() {})")
 	if err != nil {
 		return err
@@ -46,7 +48,13 @@ func (vm *VM) initHTMLCanvasElement() error {
 	if err != nil {
 		return err
 	}
-	if err := p.Object().Set("getContext", wrap(htmlCanvasElement_getContext)); err != nil {
+	if err := vm.defineProperty(p, "fillStyle", nil, canvasRenderingContext2D_setFillStyle); err != nil {
+		return err
+	}
+	if err := p.Object().Set("getImageData", wrap(canvasRenderingContext2D_getImageData)); err != nil {
+		return err
+	}
+	if err := p.Object().Set("fillRect", wrap(canvasRenderingContext2D_fillRect)); err != nil {
 		return err
 	}
 	return nil

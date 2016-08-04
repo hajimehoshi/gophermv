@@ -23,17 +23,26 @@ import (
 )
 
 type VM struct {
-	otto *otto.Otto
+	otto   *otto.Otto
+	object *otto.Object
 }
 
 func NewVM() (*VM, error) {
 	vm := &VM{
 		otto: otto.New(),
 	}
+	var err error
+	vm.object, err = vm.otto.Object("Object")
+	if err != nil {
+		return nil, err
+	}
 	if err := vm.initDocument(); err != nil {
 		return nil, err
 	}
 	if err := vm.initHTMLCanvasElement(); err != nil {
+		return nil, err
+	}
+	if err := vm.initCanvasRenderingContext2D(); err != nil {
 		return nil, err
 	}
 	return vm, nil
@@ -51,7 +60,26 @@ func (vm *VM) Exec(in io.Reader) error {
 	return nil
 }
 
-func wrap(f func (call otto.FunctionCall) (otto.Value, error)) func (call otto.FunctionCall) otto.Value {
+type Func func(call otto.FunctionCall) (otto.Value, error)
+
+func (vm *VM) defineProperty(prototype otto.Value, name string, getter Func, setter Func) error {
+	desc, err := vm.otto.Object("({})")
+	if err != nil {
+		return err
+	}
+	if getter != nil {
+		desc.Set("get", wrap(getter))
+	}
+	if setter != nil {
+		desc.Set("set", wrap(setter))
+	}
+	if _, err := vm.object.Call("defineProperty", prototype, name, desc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func wrap(f Func) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		v, err := f(call)
 		if err != nil {

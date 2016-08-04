@@ -31,7 +31,6 @@ func document_createElement(call otto.FunctionCall) (otto.Value, error) {
 	default:
 		return otto.Value{}, fmt.Errorf("vm: not implemented %s", name)
 	}
-	return otto.Value{}, nil
 }
 
 func (vm *VM) initDocument() error {
