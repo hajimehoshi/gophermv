@@ -33,6 +33,9 @@ func NewVM() (*VM, error) {
 	if err := vm.initDocument(); err != nil {
 		return nil, err
 	}
+	if err := vm.initHTMLCanvasElement(); err != nil {
+		return nil, err
+	}
 	return vm, nil
 }
 

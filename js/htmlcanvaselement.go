@@ -15,27 +15,15 @@
 package js
 
 import (
-	"fmt"
-
 	"github.com/robertkrimen/otto"
 )
 
-func document_createElement(call otto.FunctionCall) (otto.Value, error) {
-	name, err := call.Argument(0).ToString()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	switch name {
-	case "canvas":
-		return call.Otto.Run("new HTMLCanvasElement()")
-	default:
-		return otto.Value{}, fmt.Errorf("vm: not implemented %s", name)
-	}
+func htmlCanvasElement_getContext(call otto.FunctionCall) (otto.Value, error) {
 	return otto.Value{}, nil
 }
 
-func (vm *VM) initDocument() error {
-	const className = "Document"
+func (vm *VM) initHTMLCanvasElement() error {
+	const className = "HTMLCanvasElement"
 	class, err := vm.otto.Object("(function() {})")
 	if err != nil {
 		return err
@@ -47,13 +35,8 @@ func (vm *VM) initDocument() error {
 	if err != nil {
 		return err
 	}
-	if err := p.Object().Set("createElement", wrap(document_createElement)); err != nil {
+	if err := p.Object().Set("getContext", wrap(htmlCanvasElement_getContext)); err != nil {
 		return err
 	}
-	doc, err := vm.otto.Run("new " + className)
-	if err != nil {
-		return err
-	}
-	vm.otto.Set("document", doc)
 	return nil
 }
