@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hajimehoshi/gophermv/vm"
+	"github.com/hajimehoshi/gophermv/js"
 	"golang.org/x/net/html"
 )
 
@@ -33,7 +33,7 @@ type Script struct {
 	Src string
 }
 
-func (s *Script) Exec(path string, vm *vm.VM) error {
+func (s *Script) Exec(path string, vm *js.VM) error {
 	fmt.Println(s.Src)
 	f, err := os.Open(filepath.Join(path, s.Src))
 	if err != nil {
@@ -86,7 +86,7 @@ func process(path string) error {
 			scripts = append(scripts, s)
 		}
 	}
-	vm, err := vm.New()
+	vm, err := js.NewVM()
 	if err != nil {
 		return err
 	}

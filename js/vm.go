@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vm
+package js
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ type VM struct {
 	otto *otto.Otto
 }
 
-func New() (*VM, error) {
+func NewVM() (*VM, error) {
 	vm := &VM{
 		otto: otto.New(),
 	}
