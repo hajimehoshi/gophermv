@@ -17,6 +17,7 @@ package vm
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/robertkrimen/otto"
 )
@@ -45,4 +46,15 @@ func (vm *VM) Exec(in io.Reader) error {
 		}
 	}
 	return nil
+}
+
+func wrap(f func (call otto.FunctionCall) (otto.Value, error)) func (call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		v, err := f(call)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			return otto.Value{}
+		}
+		return v
+	}
 }

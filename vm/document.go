@@ -20,9 +20,18 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-func document_createElement(call otto.FunctionCall) otto.Value {
-	// TODO: Implement this
-	return otto.Value{}
+func document_createElement(call otto.FunctionCall) (otto.Value, error) {
+	name, err := call.Argument(0).ToString()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	switch name {
+	case "canvas":
+		// TODO: Implement this
+	default:
+		return otto.Value{}, fmt.Errorf("vm: not implemented %s", name)
+	}
+	return otto.Value{}, nil
 }
 
 func (vm *VM) initDocument() error {
@@ -38,10 +47,10 @@ func (vm *VM) initDocument() error {
 	if err != nil {
 		return err
 	}
-	if err := p.Object().Set("createElement", document_createElement); err != nil {
+	if err := p.Object().Set("createElement", wrap(document_createElement)); err != nil {
 		return err
 	}
-	doc, err := vm.otto.Run(fmt.Sprintf("new %s", className))
+	doc, err := vm.otto.Run("new " + className)
 	if err != nil {
 		return err
 	}
