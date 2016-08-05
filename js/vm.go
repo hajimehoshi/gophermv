@@ -35,25 +35,32 @@ func NewVM() (*VM, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := vm.initNumber(); err != nil {
-		return nil, err
-	}
-	if err := vm.initString(); err != nil {
-		return nil, err
-	}
-	if err := vm.initArray(); err != nil {
-		return nil, err
-	}
-	if err := vm.initStage(); err != nil {
-		return nil, err
-	}
-	if err := vm.initSprite(); err != nil {
-		return nil, err
-	}
-	if err := vm.initWindow(); err != nil {
+	if err := vm.init(); err != nil {
 		return nil, err
 	}
 	return vm, nil
+}
+
+func (vm *VM) init() error {
+	if err := vm.initNumber(); err != nil {
+		return err
+	}
+	if err := vm.initString(); err != nil {
+		return err
+	}
+	if err := vm.initArray(); err != nil {
+		return err
+	}
+	if err := vm.initStage(); err != nil {
+		return err
+	}
+	if err := vm.initSprite(); err != nil {
+		return err
+	}
+	if err := vm.initWindow(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (vm *VM) Exec(filename string) error {
