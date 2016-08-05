@@ -15,18 +15,11 @@
 package js
 
 import (
-	/*"fmt"
-
-	"github.com/robertkrimen/otto"*/
 )
 
-func (vm *VM) initWindow() error {
-	const className = "Window"
-	class, err := vm.otto.Object("(function() {})")
+func (vm *VM) overrideWindow() error {
+	class, err := vm.otto.Object("Window")
 	if err != nil {
-		return err
-	}
-	if err := vm.otto.Set(className, class); err != nil {
 		return err
 	}
 	p, err := class.Get("prototype")

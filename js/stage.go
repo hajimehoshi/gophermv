@@ -15,18 +15,11 @@
 package js
 
 import (
-	/*"fmt"
-
-	"github.com/robertkrimen/otto"*/
 )
 
-func (vm *VM) initStage() error {
-	const className = "Stage"
-	class, err := vm.otto.Object("(function() {})")
+func (vm *VM) overrideStage() error {
+	class, err := vm.otto.Object("Stage")
 	if err != nil {
-		return err
-	}
-	if err := vm.otto.Set(className, class); err != nil {
 		return err
 	}
 	p, err := class.Get("prototype")

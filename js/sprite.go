@@ -15,18 +15,11 @@
 package js
 
 import (
-	/*"fmt"
-
-	"github.com/robertkrimen/otto"*/
 )
 
-func (vm *VM) initSprite() error {
-	const className = "Sprite"
-	class, err := vm.otto.Object("(function() {})")
+func (vm *VM) overrideSprite() error {
+	class, err := vm.otto.Object("Sprite")
 	if err != nil {
-		return err
-	}
-	if err := vm.otto.Set(className, class); err != nil {
 		return err
 	}
 	p, err := class.Get("prototype")

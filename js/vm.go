@@ -22,8 +22,9 @@ import (
 )
 
 type VM struct {
-	otto   *otto.Otto
-	object *otto.Object
+	otto     *otto.Otto
+	object   *otto.Object
+	hasOverriddenCoreClasses bool
 }
 
 func NewVM() (*VM, error) {
@@ -41,23 +42,21 @@ func NewVM() (*VM, error) {
 	return vm, nil
 }
 
+const prelude = `
+var PIXI = {};
+PIXI.Point = function() {};
+PIXI.Rectangle = function() {};
+PIXI.Sprite = function() {};
+PIXI.DisplayObjectContainer = function() {};
+PIXI.TilingSprite = function() {};
+PIXI.AbstractFilter = function() {};
+PIXI.DisplayObject = function() {};
+PIXI.Stage = function() {};
+`
+
 func (vm *VM) init() error {
-	if err := vm.initNumber(); err != nil {
-		return err
-	}
-	if err := vm.initString(); err != nil {
-		return err
-	}
-	if err := vm.initArray(); err != nil {
-		return err
-	}
-	if err := vm.initStage(); err != nil {
-		return err
-	}
-	if err := vm.initSprite(); err != nil {
-		return err
-	}
-	if err := vm.initWindow(); err != nil {
+	_, err := vm.otto.Run(prelude)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -80,6 +79,33 @@ func (vm *VM) Exec(filename string) error {
 		default:
 			return err
 		}
+	}
+	if vm.hasOverriddenCoreClasses {
+		return nil
+	}
+	sprite, err := vm.otto.Object("Sprite")
+	if err != nil {
+		// err is present when Sprite is not defined. Just ignore this.
+		return nil
+	}
+	if sprite.Value().IsDefined() {
+		if err := vm.overrideCoreClasses(); err != nil {
+			return err
+		}
+		vm.hasOverriddenCoreClasses = true
+	}
+	return nil
+}
+
+func (vm *VM) overrideCoreClasses() error {
+	if err := vm.overrideStage(); err != nil {
+		return err
+	}
+	if err := vm.overrideSprite(); err != nil {
+		return err
+	}
+	if err := vm.overrideWindow(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -107,6 +133,8 @@ func wrap(f Func) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		v, err := f(call)
 		if err != nil {
+			// TODO: Cause `throw` error.
+			// See https://github.com/robertkrimen/otto/issues/17
 			fmt.Fprintf(os.Stderr, err.Error())
 			return otto.Value{}
 		}
