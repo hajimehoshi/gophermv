@@ -16,7 +16,6 @@ package js
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/robertkrimen/otto"
@@ -57,8 +56,13 @@ func NewVM() (*VM, error) {
 	return vm, nil
 }
 
-func (vm *VM) Exec(filename string, in io.Reader) error {
-	src, err := vm.otto.Compile(filename, in)
+func (vm *VM) Exec(filename string) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	src, err := vm.otto.Compile(filename, f)
 	if err != nil {
 		return err
 	}
