@@ -36,6 +36,15 @@ func NewVM() (*VM, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := vm.initNumber(); err != nil {
+		return nil, err
+	}
+	if err := vm.initString(); err != nil {
+		return nil, err
+	}
+	if err := vm.initArray(); err != nil {
+		return nil, err
+	}
 	if err := vm.initStage(); err != nil {
 		return nil, err
 	}
@@ -64,7 +73,7 @@ func (vm *VM) Exec(filename string, in io.Reader) error {
 	return nil
 }
 
-type Func func(call otto.FunctionCall) (otto.Value, error)
+type Func func(call otto.FunctionCall) (interface{}, error)
 
 func (vm *VM) defineProperty(prototype otto.Value, name string, getter Func, setter Func) error {
 	desc, err := vm.otto.Object("({})")
@@ -90,6 +99,11 @@ func wrap(f Func) func(call otto.FunctionCall) otto.Value {
 			fmt.Fprintf(os.Stderr, err.Error())
 			return otto.Value{}
 		}
-		return v
+		ov, err := otto.ToValue(v)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			return otto.Value{}
+		}
+		return ov
 	}
 }
