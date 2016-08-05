@@ -48,8 +48,12 @@ func NewVM() (*VM, error) {
 	return vm, nil
 }
 
-func (vm *VM) Exec(in io.Reader) error {
-	if _, err := vm.otto.Run(in); err != nil {
+func (vm *VM) Exec(filename string, in io.Reader) error {
+	src, err := vm.otto.Compile(filename, in)
+	if err != nil {
+		return err
+	}
+	if _, err := vm.otto.Run(src); err != nil {
 		switch err := err.(type) {
 		case *otto.Error:
 			return fmt.Errorf("vm: %s", err.String())

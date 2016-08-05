@@ -34,13 +34,12 @@ type Script struct {
 }
 
 func (s *Script) Exec(path string, vm *js.VM) error {
-	fmt.Println(s.Src)
 	f, err := os.Open(filepath.Join(path, s.Src))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if err := vm.Exec(f); err != nil {
+	if err := vm.Exec(s.Src, f); err != nil {
 		return err
 	}
 	return nil
