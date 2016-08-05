@@ -75,9 +75,17 @@ func process(path string) error {
 	}
 	walk(doc)
 	scripts := []*Script{}
+	skips := map[string]struct{}{
+		filepath.Join("js", "libs", "pixi.js"): struct{}{},
+		filepath.Join("js", "libs", "fpsmeter.js"): struct{}{},
+		filepath.Join("js", "rpg_core.js"): struct{}{},
+	}
 	for _, n := range scriptNodes {
 		for _, a := range n.Attr {
 			if a.Key != "src" {
+				continue
+			}
+			if _, ok := skips[filepath.Clean(a.Val)]; ok {
 				continue
 			}
 			s := &Script{
