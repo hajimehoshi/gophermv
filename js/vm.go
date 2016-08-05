@@ -36,13 +36,13 @@ func NewVM() (*VM, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := vm.initDocument(); err != nil {
+	if err := vm.initStage(); err != nil {
 		return nil, err
 	}
-	if err := vm.initHTMLCanvasElement(); err != nil {
+	if err := vm.initSprite(); err != nil {
 		return nil, err
 	}
-	if err := vm.initCanvasRenderingContext2D(); err != nil {
+	if err := vm.initWindow(); err != nil {
 		return nil, err
 	}
 	return vm, nil

@@ -15,26 +15,13 @@
 package js
 
 import (
-	"fmt"
+	/*"fmt"
 
-	"github.com/robertkrimen/otto"
+	"github.com/robertkrimen/otto"*/
 )
 
-func htmlCanvasElement_getContext(call otto.FunctionCall) (otto.Value, error) {
-	mode, err := call.Argument(0).ToString()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	switch mode {
-	case "2d":
-		return call.Otto.Run("new CanvasRenderingContext2D()")
-	default:
-		return otto.Value{}, fmt.Errorf("vm: not implemented canvas mode %s", mode)
-	}
-}
-
-func (vm *VM) initHTMLCanvasElement() error {
-	const className = "HTMLCanvasElement"
+func (vm *VM) initStage() error {
+	const className = "Stage"
 	class, err := vm.otto.Object("(function() {})")
 	if err != nil {
 		return err
@@ -46,8 +33,6 @@ func (vm *VM) initHTMLCanvasElement() error {
 	if err != nil {
 		return err
 	}
-	if err := p.Object().Set("getContext", wrap(htmlCanvasElement_getContext)); err != nil {
-		return err
-	}
+	_ = p
 	return nil
 }
