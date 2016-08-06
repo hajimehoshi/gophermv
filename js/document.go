@@ -31,10 +31,22 @@ const documentSrc = `
 function Window() {
 }
 
+Object.defineProperty(Window.prototype, 'document', {
+  get: function() {
+    return this._document;
+  },
+});
+
 Object.defineProperty(Window.prototype, 'onload', {
   set: function(func) {
     // DOM tree is already loaded. just execute this?
     func();
+  },
+});
+
+Object.defineProperty(Window.prototype, 'location', {
+  get: function() {
+    return '';
   },
 });
 
@@ -74,8 +86,19 @@ HTMLBodyElement.prototype.appendChild = function(child) {
 function HTMLScriptElement() {
 }
 
-var window = new Window();
-var document = new Document();
+(function(global) {
+  var names = Object.getOwnPropertyNames(Window.prototype);
+  for (var i in names) {
+    var name = names[i];
+    if (name === 'constructor') {
+      continue;
+    }
+    var desc = Object.getOwnPropertyDescriptor(Window.prototype, name);
+    Object.defineProperty(global, name, desc);
+  }
+  global.window = global;
+  global._document = new Document();
+})(this);
 `
 
 func (vm *VM) initDocument() error {
