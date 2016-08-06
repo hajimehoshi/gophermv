@@ -20,20 +20,27 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/hajimehoshi/ebiten"
 	"github.com/robertkrimen/otto"
 )
 
 type VM struct {
-	pwd     string
-	otto    *otto.Otto
-	object  *otto.Object
-	scripts []string
+	pwd                            string
+	otto                           *otto.Otto
+	object                         *otto.Object
+	scripts                        []string
+	onLoadCallback                 otto.Value
+	requestAnimationFrameCallbacks []otto.Value
+	updatingFrameCh                chan struct{}
+	updatedFrameCh                 chan struct{}
 }
 
 func NewVM(pwd string) (*VM, error) {
 	vm := &VM{
-		pwd:  pwd,
-		otto: otto.New(),
+		pwd:             pwd,
+		otto:            otto.New(),
+		updatingFrameCh: make(chan struct{}),
+		updatedFrameCh:  make(chan struct{}),
 	}
 	var err error
 	vm.object, err = vm.otto.Object("Object")
@@ -73,7 +80,7 @@ var (
 	skips = map[string]struct{}{
 		// Why: pixi.js will be replaced with Ebiten layer.
 		filepath.Join("js", "libs", "pixi.js"): struct{}{},
-		// Why: `window` is not defined.
+		// Why: Some elements are not defined.
 		filepath.Join("js", "libs", "fpsmeter.js"): struct{}{},
 	}
 )
@@ -85,14 +92,52 @@ func (vm *VM) Enqueue(filename string) {
 	vm.scripts = append(vm.scripts, filename)
 }
 
-func (vm *VM) Exec() error {
-	// vm.scripts might be changed during execution.
-	// Don't use for-range loop and use a regular for instead.
-	for 0 < len(vm.scripts) {
-		if err := vm.exec(vm.scripts[0]); err != nil {
+func (vm *VM) Run() error {
+	vmError := make(chan error)
+	go func() {
+		for {
+			if 0 < len(vm.scripts) {
+				if err := vm.exec(vm.scripts[0]); err != nil {
+					vmError <- err
+					return
+				}
+				vm.scripts = vm.scripts[1:]
+			} else if vm.onLoadCallback.IsDefined() {
+				if _, err := vm.onLoadCallback.Call(otto.Value{}); err != nil {
+					vmError <- err
+					return
+				}
+				vm.onLoadCallback = otto.Value{}
+			} else if 0 < len(vm.requestAnimationFrameCallbacks) {
+				callback := vm.requestAnimationFrameCallbacks[0]
+				vm.updatingFrameCh <- struct{}{}
+				<-vm.updatedFrameCh
+				if _, err := callback.Call(otto.Value{}); err != nil {
+					vmError <- err
+					return
+				}
+				vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[1:]
+			}
+		}
+	}()
+	update := func(screen *ebiten.Image) error {
+		select {
+		case <-vm.updatingFrameCh:
+			// Update
+			vm.updatedFrameCh <- struct{}{}
+		case err := <-vmError:
 			return err
 		}
-		vm.scripts = vm.scripts[1:]
+		return nil
+	}
+	// TODO: Fix the title
+	if err := ebiten.Run(update, 816, 624, 1, "test"); err != nil {
+		switch err := err.(type) {
+		case *otto.Error:
+			return fmt.Errorf("vm: %s", err.String())
+		default:
+			return err
+		}
 	}
 	return nil
 }

@@ -67,6 +67,11 @@ TouchInput._setupEventHandlers = function() {
 Utils.canReadGameFiles = function() {
   return true;
 };
+
+Bitmap.prototype.initialize = function(width, height) {
+  this._width = width;
+  this._height = height;
+};
 `
 
 func (vm *VM) overrideCoreClasses() error {

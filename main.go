@@ -73,7 +73,7 @@ func process(path string) error {
 	for _, s := range scripts {
 		vm.Enqueue(s)
 	}
-	if err := vm.Exec(); err != nil {
+	if err := vm.Run(); err != nil {
 		return err
 	}
 	return nil

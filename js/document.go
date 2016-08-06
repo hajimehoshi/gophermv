@@ -18,12 +18,22 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
+func jsSetOnLoadCallback(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	vm.onLoadCallback = call.Argument(0)
+	return otto.Value{}, nil
+}
+
 func jsAppendScript(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	src, err := call.Argument(0).ToString()
 	if err != nil {
 		return otto.Value{}, err
 	}
 	vm.Enqueue(src)
+	return otto.Value{}, nil
+}
+
+func jsRequestAnimationFrame(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	vm.requestAnimationFrameCallbacks = append(vm.requestAnimationFrameCallbacks, call.Argument(0))
 	return otto.Value{}, nil
 }
 
@@ -39,8 +49,7 @@ Object.defineProperty(Window.prototype, 'document', {
 
 Object.defineProperty(Window.prototype, 'onload', {
   set: function(func) {
-    // DOM tree is already loaded. just execute this?
-    func();
+    _gophermv_setOnLoadCallback(func);
   },
 });
 
@@ -69,7 +78,7 @@ Object.defineProperty(Window.prototype, 'navigator', {
 });
 
 Window.prototype.requestAnimationFrame = function(func) {
-  console.log('requestAnimationFrame is called');
+  _gophermv_requestAnimationFrame(func);
 };
 
 function Document() {
@@ -131,6 +140,12 @@ function AudioContext() {
 
 func (vm *VM) initDocument() error {
 	if err := vm.otto.Set("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_setOnLoadCallback", wrapFunc(jsSetOnLoadCallback, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_requestAnimationFrame", wrapFunc(jsRequestAnimationFrame, vm)); err != nil {
 		return err
 	}
 	if _, err := vm.otto.Run(documentSrc); err != nil {
