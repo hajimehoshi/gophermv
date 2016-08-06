@@ -46,7 +46,17 @@ Object.defineProperty(Window.prototype, 'onload', {
 
 Object.defineProperty(Window.prototype, 'location', {
   get: function() {
-    return '';
+    // TODO: Use the flags for hash or search
+    return {
+      hash:     '',
+      host:     '',
+      hostname: '',
+      href:     '',
+      pathname: '',
+      port:     0,
+      protocol: '',
+      search:   '',
+    };
   },
 });
 
