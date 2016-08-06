@@ -92,33 +92,34 @@ func (vm *VM) Enqueue(filename string) {
 	vm.scripts = append(vm.scripts, filename)
 }
 
+func (vm *VM) loop() error {
+	for {
+		if 0 < len(vm.scripts) {
+			if err := vm.exec(vm.scripts[0]); err != nil {
+				return err
+			}
+			vm.scripts = vm.scripts[1:]
+		} else if vm.onLoadCallback.IsDefined() {
+			if _, err := vm.onLoadCallback.Call(otto.Value{}); err != nil {
+				return err
+			}
+			vm.onLoadCallback = otto.Value{}
+		} else if 0 < len(vm.requestAnimationFrameCallbacks) {
+			callback := vm.requestAnimationFrameCallbacks[0]
+			vm.updatingFrameCh <- struct{}{}
+			<-vm.updatedFrameCh
+			if _, err := callback.Call(otto.Value{}); err != nil {
+				return err
+			}
+			vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[1:]
+		}
+	}
+}
+
 func (vm *VM) Run() error {
 	vmError := make(chan error)
 	go func() {
-		for {
-			if 0 < len(vm.scripts) {
-				if err := vm.exec(vm.scripts[0]); err != nil {
-					vmError <- err
-					return
-				}
-				vm.scripts = vm.scripts[1:]
-			} else if vm.onLoadCallback.IsDefined() {
-				if _, err := vm.onLoadCallback.Call(otto.Value{}); err != nil {
-					vmError <- err
-					return
-				}
-				vm.onLoadCallback = otto.Value{}
-			} else if 0 < len(vm.requestAnimationFrameCallbacks) {
-				callback := vm.requestAnimationFrameCallbacks[0]
-				vm.updatingFrameCh <- struct{}{}
-				<-vm.updatedFrameCh
-				if _, err := callback.Call(otto.Value{}); err != nil {
-					vmError <- err
-					return
-				}
-				vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[1:]
-			}
-		}
+		vmError <- vm.loop()
 	}()
 	update := func(screen *ebiten.Image) error {
 		select {
@@ -153,12 +154,7 @@ func (vm *VM) exec(filename string) error {
 		return err
 	}
 	if _, err := vm.otto.Run(src); err != nil {
-		switch err := err.(type) {
-		case *otto.Error:
-			return fmt.Errorf("vm: %s", err.String())
-		default:
-			return err
-		}
+		return err
 	}
 	if filepath.Clean(filename) == filepath.Join("js", "rpg_core.js") {
 		if err := vm.overrideCoreClasses(); err != nil {
