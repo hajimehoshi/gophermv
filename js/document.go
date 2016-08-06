@@ -60,6 +60,14 @@ Object.defineProperty(Window.prototype, 'location', {
   },
 });
 
+Object.defineProperty(Window.prototype, 'navigator', {
+  get: function() {
+    return {
+      userAgent: 'gophermv',
+    };
+  },
+});
+
 function Document() {
   this.initialize.apply(this, arguments);
 }
