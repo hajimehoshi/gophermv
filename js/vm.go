@@ -35,6 +35,15 @@ type VM struct {
 	updatedFrameCh                 chan struct{}
 }
 
+func detailedError(err error) error {
+	switch err := err.(type) {
+	case *otto.Error:
+		return fmt.Errorf("vm: %s", err.String())
+	default:
+		return err
+	}
+}
+
 func NewVM(pwd string) (*VM, error) {
 	vm := &VM{
 		pwd:             pwd,
@@ -45,10 +54,10 @@ func NewVM(pwd string) (*VM, error) {
 	var err error
 	vm.object, err = vm.otto.Object("Object")
 	if err != nil {
-		return nil, err
+		return nil, detailedError(err)
 	}
 	if err := vm.init(); err != nil {
-		return nil, err
+		return nil, detailedError(err)
 	}
 	return vm, nil
 }
@@ -71,6 +80,9 @@ func (vm *VM) init() error {
 		return err
 	}
 	if err := vm.initDocument(); err != nil {
+		return err
+	}
+	if err := vm.initEbitenImage(); err != nil {
 		return err
 	}
 	return nil
@@ -133,12 +145,7 @@ func (vm *VM) Run() error {
 	}
 	// TODO: Fix the title
 	if err := ebiten.Run(update, 816, 624, 1, "test"); err != nil {
-		switch err := err.(type) {
-		case *otto.Error:
-			return fmt.Errorf("vm: %s", err.String())
-		default:
-			return err
-		}
+		return detailedError(err)
 	}
 	return nil
 }
