@@ -164,6 +164,24 @@ Object.defineProperty(Image.prototype, 'height', {
 function Canvas() {
 }
 
+Object.defineProperty(Canvas.prototype, 'width', {
+  set: function(value) {
+    this._width = value;
+    if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
+      this._ebitenImage = _gophermv_newEbitenImage(this._width, this._height);
+    }
+  },
+});
+
+Object.defineProperty(Canvas.prototype, 'height', {
+  set: function(value) {
+    this._height = value;
+    if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
+      this._ebitenImage = _gophermv_newEbitenImage(this._width, this._height);
+    }
+  },
+});
+
 Object.defineProperty(Canvas.prototype, 'style', {
   get: function() {
     if (!this._style) {
@@ -189,7 +207,10 @@ CanvasRenderingContext2D.prototype.initialize = function(canvas) {
 };
 
 CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
-  // TODO: Implement this
+  if (!this._canvas._ebitenImage) {
+    throw new Error('clearRect: canvas is not initialized');
+  }
+  _gophermv_ebitenImageClearRect(this._canvas._ebitenImage, x, y, width, height);
 };
 
 CanvasRenderingContext2D.prototype.save = function() {
