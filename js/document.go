@@ -28,6 +28,14 @@ func jsAppendScript(vm *VM, call otto.FunctionCall) (interface{}, error) {
 }
 
 const documentSrc = `
+function Window() {
+}
+
+Window.prototype.onload = function(func) {
+  // DOM tree is already loaded. just execute this?
+  func();
+};
+
 function Document() {
   this.initialize.apply(this, arguments);
 }
@@ -64,6 +72,7 @@ HTMLBodyElement.prototype.appendChild = function(child) {
 function HTMLScriptElement() {
 }
 
+var window = new Window();
 var document = new Document();
 `
 
