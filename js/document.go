@@ -81,7 +81,7 @@ Document.prototype.createElement = function(name) {
   case 'script':
     return new HTMLScriptElement();
   }
-  throw 'not supported element: ' + name;
+  throw new Error('not supported element: ' + name);
 };
 
 Object.defineProperty(Document.prototype, "body", {
@@ -98,7 +98,7 @@ HTMLBodyElement.prototype.appendChild = function(child) {
     _gophermv_appendScript(child.src);
     return;
   }
-  throw 'not supported element: ' + JSON.stringify(child);
+  throw new Error('not supported element: ' + JSON.stringify(child));
 };
 
 function HTMLScriptElement() {
