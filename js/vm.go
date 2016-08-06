@@ -59,6 +59,9 @@ func (vm *VM) init() error {
 	if err != nil {
 		return err
 	}
+	if err := vm.initDocument(); err != nil {
+		return err
+	}
 	return nil
 }
 
