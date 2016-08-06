@@ -31,10 +31,12 @@ const documentSrc = `
 function Window() {
 }
 
-Window.prototype.onload = function(func) {
-  // DOM tree is already loaded. just execute this?
-  func();
-};
+Object.defineProperty(Window.prototype, 'onload', {
+  set: function(func) {
+    // DOM tree is already loaded. just execute this?
+    func();
+  },
+});
 
 function Document() {
   this.initialize.apply(this, arguments);
