@@ -18,28 +18,55 @@ const coreClassesSrc = `
 Graphics._testCanvasBlendModes = function() {
   this._canUseDifferenceBlend = false;
   this._canUseSaturationBlend = false;
-}
+};
 
 Graphics._modifyExistingElements = function() {
   // Do nothing
-}
+};
 
 Graphics._createAllElements = function() {
   // Do nothing
-}
+};
 
 Graphics._disableTextSelection = function() {
   // Do nothing
-}
+};
 
 Graphics._disableContextMenu = function() {
   // Do nothing
-}
+};
 
 Graphics._setupEventHandlers = function() {
   // Do nothing
   // TODO: Set input handling
-}
+};
+
+WebAudio._detectCodecs = function() {
+  this._canPlayOgg = true;
+  this._canPlayM4a = false;
+};
+
+WebAudio._createMasterGainNode = function() {
+  // Do nothing
+};
+
+WebAudio._setupEventHandlers = function() {
+  // Do nothing
+};
+
+Input._setupEventHandlers = function() {
+  // Do nothing
+  // TODO: Set input handling
+};
+
+TouchInput._setupEventHandlers = function() {
+  // Do nothing
+  // TODO: Set input handling
+};
+
+Utils.canReadGameFiles = function() {
+  return true;
+};
 `
 
 func (vm *VM) overrideCoreClasses() error {

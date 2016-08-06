@@ -27,6 +27,9 @@ SceneManager.update = function() {
     this.updateMain();
     this.tickEnd();
 };
+
+SceneManager.setupErrorHandlers = function() {
+};
 `
 
 func (vm *VM) overrideManagerClasses() error {

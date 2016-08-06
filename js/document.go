@@ -117,6 +117,12 @@ function HTMLScriptElement() {
   global.window = global;
   global._document = new Document();
 })(this);
+
+function Image() {
+}
+
+function AudioContext() {
+}
 `
 
 func (vm *VM) initDocument() error {
