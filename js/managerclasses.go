@@ -14,26 +14,57 @@
 
 package js
 
+import (
+	"io/ioutil"
+	"path/filepath"
+
+	"github.com/robertkrimen/otto"
+)
+
+func jsLoadJSONFile(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	path, err := call.Argument(0).ToString()
+	if err != nil {
+		return "", err
+	}
+	content, err := ioutil.ReadFile(filepath.Join(vm.pwd, path))
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
 const managerClassesSrc = `
 SceneManager.run = function(sceneClass) {
-    this.initialize();
-    this.goto(sceneClass);
-    this.requestUpdate();
+  this.initialize();
+  this.goto(sceneClass);
+  this.requestUpdate();
 };
 
 SceneManager.update = function() {
-    this.tickStart();
-    this.updateInputData();
-    this.updateMain();
-    this.tickEnd();
+  this.tickStart();
+  this.updateInputData();
+  this.updateMain();
+  this.tickEnd();
 };
 
 SceneManager.setupErrorHandlers = function() {
+};
+
+DataManager.loadDataFile = function(name, src) {
+  window[name] = null;
+  // TODO: Load file async
+  var path = 'data/' + src;
+  var content = _gophermv_loadJSONFile(path);
+  window[name] = JSON.parse(content);
+  DataManager.onLoad(window[name]);
 };
 `
 
 func (vm *VM) overrideManagerClasses() error {
 	if _, err := vm.otto.Run(managerClassesSrc); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_loadJSONFile", wrapFunc(jsLoadJSONFile, vm)); err != nil {
 		return err
 	}
 	return nil
