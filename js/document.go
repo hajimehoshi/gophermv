@@ -14,20 +14,65 @@
 
 package js
 
+import (
+	"github.com/robertkrimen/otto"
+)
+
+func jsAppendScript(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	src, err := call.Argument(0).ToString()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	vm.Enqueue(src)
+	return otto.Value{}, nil
+}
+
+const documentSrc = `
+function Document() {
+  this.initialize.apply(this, arguments);
+}
+
+Document.prototype.initialize = function() {
+  this._body = new HTMLBodyElement();
+};
+
+Document.prototype.createElement = function(name) {
+  switch (name) {
+  case 'script':
+    return new HTMLScriptElement();
+  }
+  throw 'not supported element: ' + name;
+};
+
+Object.defineProperty(Document.prototype, "body", {
+  get: function() {
+    return this._body;
+  },
+});
+
+function HTMLBodyElement() {
+}
+
+HTMLBodyElement.prototype.appendChild = function(child) {
+  if (child instanceof HTMLScriptElement) {
+    _gophermv_appendScript(child.src);
+    return;
+  }
+  throw 'not supported element: ' + JSON.stringify(child);
+};
+
+function HTMLScriptElement() {
+}
+
+var document = new Document();
+`
+
 func (vm *VM) initDocument() error {
-	class, err := vm.otto.Object("Document = function() {}")
-	if err != nil {
+	if err := vm.otto.Set("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
 		return err
 	}
-	p, err := class.Get("prototype")
-	if err != nil {
+	if _, err := vm.otto.Run(documentSrc); err != nil {
 		return err
 	}
-	_ = p
-	doc, err := vm.otto.Run("new Document()")
-	if err != nil {
-		return err
-	}
-	vm.otto.Set("document", doc)
 	return nil
 }

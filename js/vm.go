@@ -145,28 +145,11 @@ func (vm *VM) overrideCoreClasses() error {
 	return nil
 }
 
-type Func func(call otto.FunctionCall) (interface{}, error)
+type Func func(vm *VM, call otto.FunctionCall) (interface{}, error)
 
-func (vm *VM) defineProperty(prototype otto.Value, name string, getter Func, setter Func) error {
-	desc, err := vm.otto.Object("({})")
-	if err != nil {
-		return err
-	}
-	if getter != nil {
-		desc.Set("get", wrap(getter))
-	}
-	if setter != nil {
-		desc.Set("set", wrap(setter))
-	}
-	if _, err := vm.object.Call("defineProperty", prototype, name, desc); err != nil {
-		return err
-	}
-	return nil
-}
-
-func wrap(f Func) func(call otto.FunctionCall) otto.Value {
+func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
-		v, err := f(call)
+		v, err := f(vm, call)
 		if err != nil {
 			// TODO: Cause `throw` error.
 			// See https://github.com/robertkrimen/otto/issues/17
