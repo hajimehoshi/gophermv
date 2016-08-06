@@ -14,12 +14,25 @@
 
 package js
 
-const coreClassesSrc = `
+const managerClassesSrc = `
+SceneManager.run = function(sceneClass) {
+    this.initialize();
+    this.goto(sceneClass);
+    this.requestUpdate();
+};
+
+SceneManager.update = function() {
+    this.tickStart();
+    this.updateInputData();
+    this.updateMain();
+    this.tickEnd();
+};
 `
 
-func (vm *VM) overrideCoreClasses() error {
-	if _, err := vm.otto.Run(coreClassesSrc); err != nil {
+func (vm *VM) overrideManagerClasses() error {
+	if _, err := vm.otto.Run(managerClassesSrc); err != nil {
 		return err
 	}
 	return nil
 }
+

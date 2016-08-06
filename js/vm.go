@@ -120,6 +120,11 @@ func (vm *VM) exec(filename string) error {
 			return err
 		}
 	}
+	if filepath.Clean(filename) == filepath.Join("js", "rpg_managers.js") {
+		if err := vm.overrideManagerClasses(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
