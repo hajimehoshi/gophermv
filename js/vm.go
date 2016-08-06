@@ -133,19 +133,6 @@ func (vm *VM) exec(filename string) error {
 	return nil
 }
 
-func (vm *VM) overrideCoreClasses() error {
-	if err := vm.overrideStage(); err != nil {
-		return err
-	}
-	if err := vm.overrideSprite(); err != nil {
-		return err
-	}
-	if err := vm.overrideWindow(); err != nil {
-		return err
-	}
-	return nil
-}
-
 type Func func(vm *VM, call otto.FunctionCall) (interface{}, error)
 
 func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
