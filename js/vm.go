@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/robertkrimen/otto"
 )
@@ -151,14 +152,12 @@ func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		v, err := f(vm, call)
 		if err != nil {
-			// TODO: Cause `throw` error.
-			// See https://github.com/robertkrimen/otto/issues/17
-			fmt.Fprintf(os.Stderr, err.Error())
+			vm.otto.Run(fmt.Sprintf("throw \"%s\"", template.JSEscapeString(err.Error())))
 			return otto.Value{}
 		}
 		ov, err := otto.ToValue(v)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
+			vm.otto.Run(fmt.Sprintf("throw \"%s\"", template.JSEscapeString(err.Error())))
 			return otto.Value{}
 		}
 		return ov
