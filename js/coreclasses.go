@@ -15,6 +15,31 @@
 package js
 
 const coreClassesSrc = `
+Graphics._testCanvasBlendModes = function() {
+  this._canUseDifferenceBlend = false;
+  this._canUseSaturationBlend = false;
+}
+
+Graphics._modifyExistingElements = function() {
+  // Do nothing
+}
+
+Graphics._createAllElements = function() {
+  // Do nothing
+}
+
+Graphics._disableTextSelection = function() {
+  // Do nothing
+}
+
+Graphics._disableContextMenu = function() {
+  // Do nothing
+}
+
+Graphics._setupEventHandlers = function() {
+  // Do nothing
+  // TODO: Set input handling
+}
 `
 
 func (vm *VM) overrideCoreClasses() error {
