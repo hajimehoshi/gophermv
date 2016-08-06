@@ -105,9 +105,9 @@ func (vm *VM) loop() error {
 			}
 			vm.onLoadCallback = otto.Value{}
 		} else if 0 < len(vm.requestAnimationFrameCallbacks) {
-			callback := vm.requestAnimationFrameCallbacks[0]
 			vm.updatingFrameCh <- struct{}{}
 			<-vm.updatedFrameCh
+			callback := vm.requestAnimationFrameCallbacks[0]
 			if _, err := callback.Call(otto.Value{}); err != nil {
 				return err
 			}

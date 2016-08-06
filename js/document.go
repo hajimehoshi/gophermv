@@ -77,6 +77,12 @@ Object.defineProperty(Window.prototype, 'navigator', {
   },
 });
 
+Object.defineProperty(Window.prototype, 'localStorage', {
+  get: function() {
+    return this._localStorage;
+  },
+});
+
 Window.prototype.requestAnimationFrame = function(func) {
   _gophermv_requestAnimationFrame(func);
 };
@@ -123,6 +129,22 @@ function Image() {
 function AudioContext() {
 }
 
+function LocalStorage() {
+  this._store = {};
+}
+
+LocalStorage.prototype.getItem = function(key) {
+  return this._store[key];
+};
+
+LocalStorage.prototype.setItem = function(key, value) {
+  this._store[key] = value;
+};
+
+LocalStorage.prototype.removeItem = function(key) {
+  delete this._store[key];
+};
+
 (function(global) {
   var names = Object.getOwnPropertyNames(Window.prototype);
   for (var i in names) {
@@ -135,6 +157,7 @@ function AudioContext() {
   }
   global.window = global;
   global._document = new Document();
+  global._localStorage = new LocalStorage();
 })(this);
 `
 
