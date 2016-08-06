@@ -15,6 +15,13 @@
 package js
 
 import (
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
+	"os"
+	"path/filepath"
+
+	"github.com/hajimehoshi/ebiten"
 	"github.com/robertkrimen/otto"
 )
 
@@ -35,6 +42,37 @@ func jsAppendScript(vm *VM, call otto.FunctionCall) (interface{}, error) {
 func jsRequestAnimationFrame(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	vm.requestAnimationFrameCallbacks = append(vm.requestAnimationFrameCallbacks, call.Argument(0))
 	return otto.Value{}, nil
+}
+
+func jsLoadEbitenImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	src, err := call.Argument(0).ToString()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	f, err := os.Open(filepath.Join(vm.pwd, src))
+	if err != nil {
+		return otto.Value{}, err
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	if err != nil {
+		return otto.Value{}, err
+	}
+	eimg, err := ebiten.NewImageFromImage(img, ebiten.FilterNearest)
+	if err != nil {
+		return otto.Value{}, err
+	}
+	return eimg, nil
+}
+
+func jsEbitenImageSize(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	oimg, err := call.Argument(0).Export()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	img := oimg.(*ebiten.Image)
+	w, h := img.Size()
+	return []int{w, h}, nil
 }
 
 const documentSrc = `
@@ -103,7 +141,7 @@ Document.prototype.createElement = function(name) {
   throw new Error('not supported element: ' + name);
 };
 
-Object.defineProperty(Document.prototype, "body", {
+Object.defineProperty(Document.prototype, 'body', {
   get: function() {
     return this._body;
   },
@@ -124,7 +162,32 @@ function HTMLScriptElement() {
 }
 
 function Image() {
+  this.initialize.apply(this, arguments);
 }
+
+Image.prototype.initialize = function() {
+  this._ebitenImage = null;
+};
+
+Object.defineProperty(Image.prototype, 'src', {
+  set: function(value) {
+    this._ebitenImage = _gophermv_loadEbitenImage(value);
+  },
+});
+
+Object.defineProperty(Image.prototype, 'width', {
+  get: function() {
+    var size = _gophermv_ebitenImageSize(this._ebitenImage);
+    return size[0];
+  },
+});
+
+Object.defineProperty(Image.prototype, 'width', {
+  get: function() {
+    var size = _gophermv_ebitenImageSize(this._ebitenImage);
+    return size[1];
+  },
+});
 
 function AudioContext() {
 }
@@ -169,6 +232,12 @@ func (vm *VM) initDocument() error {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_requestAnimationFrame", wrapFunc(jsRequestAnimationFrame, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_loadEbitenImage", wrapFunc(jsLoadEbitenImage, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_ebitenImageSize", wrapFunc(jsEbitenImageSize, vm)); err != nil {
 		return err
 	}
 	if _, err := vm.otto.Run(documentSrc); err != nil {

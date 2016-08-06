@@ -189,7 +189,7 @@ func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
 			}
 			return otto.Value{}
 		}
-		ov, err := otto.ToValue(v)
+		ov, err := vm.otto.ToValue(v)
 		if err != nil {
 			if err := vm.throw(err); err != nil {
 				panic(err)
