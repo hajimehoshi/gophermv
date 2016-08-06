@@ -24,11 +24,10 @@ import (
 )
 
 type VM struct {
-	pwd                      string
-	otto                     *otto.Otto
-	object                   *otto.Object
-	scripts                  []string
-	hasOverriddenCoreClasses bool
+	pwd     string
+	otto    *otto.Otto
+	object  *otto.Object
+	scripts []string
 }
 
 func NewVM(pwd string) (*VM, error) {
@@ -116,19 +115,10 @@ func (vm *VM) exec(filename string) error {
 			return err
 		}
 	}
-	if vm.hasOverriddenCoreClasses {
-		return nil
-	}
-	sprite, err := vm.otto.Object("Sprite")
-	if err != nil {
-		// err is present when Sprite is not defined. Just ignore this.
-		return nil
-	}
-	if sprite.Value().IsDefined() {
+	if filepath.Clean(filename) == filepath.Join("js", "rpg_core.js") {
 		if err := vm.overrideCoreClasses(); err != nil {
 			return err
 		}
-		vm.hasOverriddenCoreClasses = true
 	}
 	return nil
 }
