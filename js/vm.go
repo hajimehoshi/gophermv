@@ -175,20 +175,29 @@ func (vm *VM) exec(filename string) error {
 
 type Func func(vm *VM, call otto.FunctionCall) (interface{}, error)
 
-func (vm *VM) throw(err error) {
-	vm.otto.Run(fmt.Sprintf("throw new Error(\"%s\")", template.JSEscapeString(err.Error())))
+func (vm *VM) throw(err error) error {
+	jsErr, err := vm.otto.Run(fmt.Sprintf("new Error(\"%s\")", template.JSEscapeString(err.Error())))
+	if err != nil {
+		return err
+	}
+	// `panic` throws the error object in Otto.
+	panic(jsErr)
 }
 
 func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		v, err := f(vm, call)
 		if err != nil {
-			vm.throw(err)
+			if err := vm.throw(err); err != nil {
+				panic(err)
+			}
 			return otto.Value{}
 		}
 		ov, err := otto.ToValue(v)
 		if err != nil {
-			vm.throw(err)
+			if err := vm.throw(err); err != nil {
+				panic(err)
+			}
 			return otto.Value{}
 		}
 		return ov
