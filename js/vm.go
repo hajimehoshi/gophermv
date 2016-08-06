@@ -69,7 +69,19 @@ func (vm *VM) init() error {
 	return nil
 }
 
+var (
+	skips = map[string]struct{}{
+		// Why: pixi.js will be replaced with Ebiten layer.
+		filepath.Join("js", "libs", "pixi.js"): struct{}{},
+		// Why: `window` is not defined.
+		filepath.Join("js", "libs", "fpsmeter.js"): struct{}{},
+	}
+)
+
 func (vm *VM) Enqueue(filename string) {
+	if _, ok := skips[filepath.Clean(filename)]; ok {
+		return
+	}
 	vm.scripts = append(vm.scripts, filename)
 }
 
