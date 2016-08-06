@@ -68,6 +68,10 @@ Object.defineProperty(Window.prototype, 'navigator', {
   },
 });
 
+Window.prototype.requestAnimationFrame = function(func) {
+  console.log('requestAnimationFrame is called');
+};
+
 function Document() {
   this.initialize.apply(this, arguments);
 }
@@ -104,6 +108,12 @@ HTMLBodyElement.prototype.appendChild = function(child) {
 function HTMLScriptElement() {
 }
 
+function Image() {
+}
+
+function AudioContext() {
+}
+
 (function(global) {
   var names = Object.getOwnPropertyNames(Window.prototype);
   for (var i in names) {
@@ -117,12 +127,6 @@ function HTMLScriptElement() {
   global.window = global;
   global._document = new Document();
 })(this);
-
-function Image() {
-}
-
-function AudioContext() {
-}
 `
 
 func (vm *VM) initDocument() error {
