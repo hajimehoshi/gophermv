@@ -99,8 +99,10 @@ Document.prototype.createElement = function(name) {
   switch (name) {
   case 'script':
     return new HTMLScriptElement();
+  case 'canvas':
+    return new Canvas();
   }
-  throw new Error('not supported element: ' + name);
+  throw new Error('createElement: not supported element: ' + name);
 };
 
 Object.defineProperty(Document.prototype, 'body', {
@@ -117,7 +119,15 @@ HTMLBodyElement.prototype.appendChild = function(child) {
     _gophermv_appendScript(child.src);
     return;
   }
-  throw new Error('not supported element: ' + JSON.stringify(child));
+  if (child instanceof Canvas) {
+    // TODO: Draw canvas elements
+    if (!this._canvasElements) {
+      this._canvasElements = [];
+    }
+    this._canvasElements.push(child);
+    return;
+  }
+  throw new Error('appendChild: not supported element: ' + JSON.stringify(child));
 };
 
 function HTMLScriptElement() {
@@ -150,6 +160,49 @@ Object.defineProperty(Image.prototype, 'height', {
     return size[1];
   },
 });
+
+function Canvas() {
+}
+
+Object.defineProperty(Canvas.prototype, 'style', {
+  get: function() {
+    if (!this._style) {
+      this._style = {};
+    }
+    return this._style;
+  },
+});
+
+Canvas.prototype.getContext = function(mode) {
+  if (mode === '2d') {
+    return new CanvasRenderingContext2D(this);
+  }
+  throw new Error('getContext: not supported mode: ' + mode);
+};
+
+function CanvasRenderingContext2D() {
+  this.initialize.apply(this, arguments);
+}
+
+CanvasRenderingContext2D.prototype.initialize = function(canvas) {
+  this._canvas = canvas;
+};
+
+CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
+  // TODO: Implement this
+};
+
+CanvasRenderingContext2D.prototype.save = function() {
+  // TODO: Implement this
+};
+
+CanvasRenderingContext2D.prototype.restore = function() {
+  // TODO: Implement this
+};
+
+CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
+  // TODO: Implement this
+};
 
 function AudioContext() {
 }

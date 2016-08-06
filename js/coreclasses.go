@@ -20,45 +20,18 @@ Graphics._testCanvasBlendModes = function() {
   this._canUseSaturationBlend = false;
 };
 
-Graphics._modifyExistingElements = function() {
-  // Do nothing
-};
-
-Graphics._createAllElements = function() {
-  // Do nothing
-};
-
-Graphics._disableTextSelection = function() {
-  // Do nothing
-};
-
-Graphics._disableContextMenu = function() {
-  // Do nothing
-};
+Graphics._modifyExistingElements = function() {};
+Graphics._disableTextSelection = function() {};
+Graphics._disableContextMenu = function() {};
+Graphics._createErrorPrinter = function() {};
+Graphics._createVideo = function() {};
+Graphics._createFPSMeter = function() {};
+Graphics._createModeBox = function() {};
+Graphics._createFontLoader = function() {};
 
 Graphics._setupEventHandlers = function() {
   // Do nothing
   // TODO: Set input handling
-};
-
-Graphics._clearUpperCanvas = function() {
-  // Do nothing
-};
-
-Graphics._paintUpperCanvas = function() {
-  this._clearUpperCanvas();
-  // ...
-};
-
-Graphics.updateLoading = function() {
-  this._loadingCount++;
-  this._paintUpperCanvas();
-  // this._upperCanvas.style.opacity = 1;
-};
-
-Graphics.endLoading = function() {
-  this._clearUpperCanvas();
-  // this._upperCanvas.style.opacity = 0;
 };
 
 WebAudio._detectCodecs = function() {
@@ -66,13 +39,8 @@ WebAudio._detectCodecs = function() {
   this._canPlayM4a = false;
 };
 
-WebAudio._createMasterGainNode = function() {
-  // Do nothing
-};
-
-WebAudio._setupEventHandlers = function() {
-  // Do nothing
-};
+WebAudio._createMasterGainNode = function() {};
+WebAudio._setupEventHandlers = function() {};
 
 Input._setupEventHandlers = function() {
   // Do nothing
