@@ -27,7 +27,6 @@ import (
 type VM struct {
 	pwd                            string
 	otto                           *otto.Otto
-	object                         *otto.Object
 	scripts                        []string
 	onLoadCallback                 otto.Value
 	requestAnimationFrameCallbacks []otto.Value
@@ -51,18 +50,13 @@ func NewVM(pwd string) (*VM, error) {
 		updatingFrameCh: make(chan struct{}),
 		updatedFrameCh:  make(chan struct{}),
 	}
-	var err error
-	vm.object, err = vm.otto.Object("Object")
-	if err != nil {
-		return nil, detailedError(err)
-	}
 	if err := vm.init(); err != nil {
 		return nil, detailedError(err)
 	}
 	return vm, nil
 }
 
-const prelude = `
+const pseudoPixiSrc = `
 var PIXI = {};
 PIXI.Point = function() {};
 PIXI.Rectangle = function() {};
@@ -75,11 +69,10 @@ PIXI.Stage = function() {};
 `
 
 func (vm *VM) init() error {
-	_, err := vm.otto.Run(prelude)
-	if err != nil {
+	if err := vm.initDocument(); err != nil {
 		return err
 	}
-	if err := vm.initDocument(); err != nil {
+	if _, err := vm.otto.Run(pseudoPixiSrc); err != nil {
 		return err
 	}
 	if err := vm.initEbitenImage(); err != nil {
