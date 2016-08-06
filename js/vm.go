@@ -17,18 +17,22 @@ package js
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/robertkrimen/otto"
 )
 
 type VM struct {
-	otto     *otto.Otto
-	object   *otto.Object
+	pwd                      string
+	otto                     *otto.Otto
+	object                   *otto.Object
+	scripts                  []string
 	hasOverriddenCoreClasses bool
 }
 
-func NewVM() (*VM, error) {
+func NewVM(pwd string) (*VM, error) {
 	vm := &VM{
+		pwd:  pwd,
 		otto: otto.New(),
 	}
 	var err error
@@ -65,8 +69,24 @@ func (vm *VM) init() error {
 	return nil
 }
 
-func (vm *VM) Exec(filename string) error {
-	f, err := os.Open(filename)
+func (vm *VM) Enqueue(filename string) {
+	vm.scripts = append(vm.scripts, filename)
+}
+
+func (vm *VM) Exec() error {
+	// vm.scripts might be changed during execution.
+	// Don't use for-range loop and use a regular for instead.
+	for 0 < len(vm.scripts) {
+		if err := vm.exec(vm.scripts[0]); err != nil {
+			return err
+		}
+		vm.scripts = vm.scripts[1:]
+	}
+	return nil
+}
+
+func (vm *VM) exec(filename string) error {
+	f, err := os.Open(filepath.Join(vm.pwd, filename))
 	if err != nil {
 		return err
 	}

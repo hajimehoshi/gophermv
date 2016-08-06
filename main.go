@@ -29,17 +29,6 @@ const (
 	indexHTMLFile  = "index.html"
 )
 
-type Script struct {
-	Src string
-}
-
-func (s *Script) Exec(path string, vm *js.VM) error {
-	if err := vm.Exec(filepath.Join(path, s.Src)); err != nil {
-		return err
-	}
-	return nil
-}
-
 func process(path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -68,9 +57,11 @@ func process(path string) error {
 		}
 	}
 	walk(doc)
-	scripts := []*Script{}
+	scripts := []string{}
 	skips := map[string]struct{}{
+		// Why: pixi.js will be replaced with Ebiten layer.
 		filepath.Join("js", "libs", "pixi.js"): struct{}{},
+		// Why: `window` is not defined.
 		filepath.Join("js", "libs", "fpsmeter.js"): struct{}{},
 	}
 	for _, n := range scriptNodes {
@@ -81,20 +72,18 @@ func process(path string) error {
 			if _, ok := skips[filepath.Clean(a.Val)]; ok {
 				continue
 			}
-			s := &Script{
-				Src: a.Val,
-			}
-			scripts = append(scripts, s)
+			scripts = append(scripts, a.Val)
 		}
 	}
-	vm, err := js.NewVM()
+	vm, err := js.NewVM(path)
 	if err != nil {
 		return err
 	}
 	for _, s := range scripts {
-		if err := s.Exec(path, vm); err != nil {
-			return err
-		}
+		vm.Enqueue(s)
+	}
+	if err := vm.Exec(); err != nil {
+		return err
 	}
 	return nil
 }
