@@ -186,8 +186,12 @@ Object.defineProperty(Canvas.prototype, 'width', {
     return size[0];
   },
   set: function(value) {
+    if (this._width === value) {
+      return;
+    }
     this._width = value;
-    if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
+    // TODO: Note that this recreates _ebitenImage. Should we preserve the exisitng image?
+    if (0 < this._width && 0 < this._height) {
       this._ebitenImage = _gophermv_newEbitenImage(this._width, this._height);
     }
   },
@@ -199,8 +203,11 @@ Object.defineProperty(Canvas.prototype, 'height', {
     return size[1];
   },
   set: function(value) {
+    if (this._height === value) {
+      return;
+    }
     this._height = value;
-    if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
+    if (0 < this._width && 0 < this._height) {
       this._ebitenImage = _gophermv_newEbitenImage(this._width, this._height);
     }
   },

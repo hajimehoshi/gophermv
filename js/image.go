@@ -202,9 +202,6 @@ func jsEbitenImagePixels(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	if err != nil {
 		return otto.Value{}, err
 	}
-	println(x, y)
-	w, h := img.Size()
-	println(w, h)
 	data := make([]uint8, width*height*4)
 	for j := int(y); j < int(y+height); j++ {
 		for i := int(x); i < int(x+width); i++ {
