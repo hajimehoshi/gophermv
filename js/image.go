@@ -155,6 +155,7 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(x, y)
 	op.ColorM.Scale(1, 1, 1, alpha)
+	// TODO: Use composite mode
 	return op, nil
 }
 

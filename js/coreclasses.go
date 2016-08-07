@@ -56,13 +56,22 @@ Utils.canReadGameFiles = function() {
   return true;
 };
 
-Bitmap.prototype.initialize = function(width, height) {
+/*Bitmap.prototype.initialize = function(width, height) {
   this._width = width;
   this._height = height;
+  this._image = null;
+  this._url = '';
+  this._paintOpacity = 255;
   this._smooth = false;
   this._loadListeners = [];
   this._isLoading = false;
   this._hasError = false
+  this.fontFace = 'GameFont';
+  this.fontSize = 28;
+  this.fontItalic = false;
+  this.textColor = '#ffffff';
+  this.outlineColor = 'rgba(0, 0, 0, 0.5)';
+  this.outlineWidth = 4;
 };
 
 Object.defineProperty(Bitmap.prototype, 'smooth', {
@@ -73,7 +82,7 @@ Object.defineProperty(Bitmap.prototype, 'smooth', {
     // TODO: Ebiten can't change an Image's filter.
     this._smooth = value;
   }
-});
+});*/
 `
 
 func (vm *VM) overrideCoreClasses() error {

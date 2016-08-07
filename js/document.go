@@ -18,8 +18,8 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-func jsSetOnLoadCallback(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	vm.onLoadCallback = call.Argument(0)
+func jsAppendOnLoadCallback(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	vm.onLoadCallbacks = append(vm.onLoadCallbacks, call.Argument(0));
 	return otto.Value{}, nil
 }
 
@@ -48,8 +48,8 @@ Object.defineProperty(Window.prototype, 'document', {
 });
 
 Object.defineProperty(Window.prototype, 'onload', {
-  set: function(func) {
-    _gophermv_setOnLoadCallback(func);
+  set: function(f) {
+    _gophermv_appendOnLoadCallback(f);
   },
 });
 
@@ -168,6 +168,12 @@ Object.defineProperty(Image.prototype, 'height', {
   get: function() {
     var size = _gophermv_ebitenImageSize(this._ebitenImage);
     return size[1];
+  },
+});
+
+Object.defineProperty(Image.prototype, 'onload', {
+  set: function(f) {
+    _gophermv_appendOnLoadCallback(f);
   },
 });
 
@@ -345,7 +351,7 @@ func (vm *VM) initDocument() error {
 	if err := vm.otto.Set("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_setOnLoadCallback", wrapFunc(jsSetOnLoadCallback, vm)); err != nil {
+	if err := vm.otto.Set("_gophermv_appendOnLoadCallback", wrapFunc(jsAppendOnLoadCallback, vm)); err != nil {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_requestAnimationFrame", wrapFunc(jsRequestAnimationFrame, vm)); err != nil {

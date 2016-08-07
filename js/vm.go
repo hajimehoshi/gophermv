@@ -28,7 +28,7 @@ type VM struct {
 	pwd                            string
 	otto                           *otto.Otto
 	scripts                        []string
-	onLoadCallback                 otto.Value
+	onLoadCallbacks                []otto.Value
 	requestAnimationFrameCallbacks []otto.Value
 	updatingFrameCh                chan struct{}
 	updatedFrameCh                 chan struct{}
@@ -66,6 +66,15 @@ PIXI.TilingSprite = function() {};
 PIXI.AbstractFilter = function() {};
 PIXI.DisplayObject = function() {};
 PIXI.Stage = function() {};
+
+// Called at Bitmap
+PIXI.BaseTexture = function() {};
+PIXI.BaseTexture.prototype.dirty = function() {
+};
+PIXI.scaleModes = {
+  NEAREST: 0,
+  LINEAR: 1,
+};
 `
 
 func (vm *VM) init() error {
@@ -104,11 +113,12 @@ func (vm *VM) loop() error {
 				return err
 			}
 			vm.scripts = vm.scripts[1:]
-		} else if vm.onLoadCallback.IsDefined() {
-			if _, err := vm.onLoadCallback.Call(otto.Value{}); err != nil {
+		} else if 0 < len(vm.onLoadCallbacks) {
+			callback := vm.onLoadCallbacks[0]
+			if _, err := callback.Call(otto.Value{}); err != nil {
 				return err
 			}
-			vm.onLoadCallback = otto.Value{}
+			vm.onLoadCallbacks = vm.onLoadCallbacks[1:]
 		} else if 0 < len(vm.requestAnimationFrameCallbacks) {
 			vm.updatingFrameCh <- struct{}{}
 			<-vm.updatedFrameCh
