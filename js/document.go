@@ -232,7 +232,12 @@ CanvasRenderingContext2D.prototype.restore = function() {
 };
 
 CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
-  // TODO: Implement this
+  if (!this._canvas._ebitenImage) {
+    throw new Error('clearRect: canvas is not initialized');
+  }
+  var dst = this._canvas._ebitenImage;
+  var src = image._ebitenImage;
+  _gophermv_ebitenImageDrawImage(dst, src, x, y);
 };
 
 function AudioContext() {

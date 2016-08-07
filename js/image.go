@@ -127,6 +127,33 @@ func jsEbitenImageClearRect(vm *VM, call otto.FunctionCall) (interface{}, error)
 	return otto.Value{}, nil
 }
 
+func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	odst, err := call.Argument(0).Export()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	dst := odst.(*ebiten.Image)
+	osrc, err := call.Argument(1).Export()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	src := osrc.(*ebiten.Image)
+	x, err := call.Argument(2).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	y, err := call.Argument(3).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(x), float64(y))
+	if err := dst.DrawImage(src, op); err != nil {
+		return otto.Value{}, err
+	}
+	return otto.Value{}, nil
+}
+
 func (vm *VM) initEbitenImage() error {
 	if err := vm.otto.Set("_gophermv_newEbitenImage", wrapFunc(jsNewEbitenImage, vm)); err != nil {
 		return err
@@ -138,6 +165,9 @@ func (vm *VM) initEbitenImage() error {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_ebitenImageClearRect", wrapFunc(jsEbitenImageClearRect, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_ebitenImageDrawImage", wrapFunc(jsEbitenImageDrawImage, vm)); err != nil {
 		return err
 	}
 	return nil
