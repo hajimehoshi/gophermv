@@ -34,6 +34,10 @@ Graphics._setupEventHandlers = function() {
   // TODO: Set input handling
 };
 
+Graphics.isFontLoaded = function(name) {
+  return true;
+};
+
 WebAudio._detectCodecs = function() {
   this._canPlayOgg = true;
   this._canPlayM4a = false;
@@ -41,6 +45,14 @@ WebAudio._detectCodecs = function() {
 
 WebAudio._createMasterGainNode = function() {};
 WebAudio._setupEventHandlers = function() {};
+WebAudio.prototype._load = function(url) {
+  // TODO: Implement this
+  this._buffer = [];
+  this._totalTime = 0;
+  this._loopStart = 0;
+  this._loopLength = 0;
+  this._onLoad();
+};
 
 Input._setupEventHandlers = function() {
   // Do nothing
@@ -55,34 +67,6 @@ TouchInput._setupEventHandlers = function() {
 Utils.canReadGameFiles = function() {
   return true;
 };
-
-/*Bitmap.prototype.initialize = function(width, height) {
-  this._width = width;
-  this._height = height;
-  this._image = null;
-  this._url = '';
-  this._paintOpacity = 255;
-  this._smooth = false;
-  this._loadListeners = [];
-  this._isLoading = false;
-  this._hasError = false
-  this.fontFace = 'GameFont';
-  this.fontSize = 28;
-  this.fontItalic = false;
-  this.textColor = '#ffffff';
-  this.outlineColor = 'rgba(0, 0, 0, 0.5)';
-  this.outlineWidth = 4;
-};
-
-Object.defineProperty(Bitmap.prototype, 'smooth', {
-  get: function() {
-    return this._smooth;
-  }
-  set: function(value) {
-    // TODO: Ebiten can't change an Image's filter.
-    this._smooth = value;
-  }
-});*/
 `
 
 func (vm *VM) overrideCoreClasses() error {
