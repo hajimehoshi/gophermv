@@ -230,7 +230,11 @@ CanvasRenderingContext2D.prototype.initialize = function(canvas) {
     return {
       get: function() {
         var state = this._stateStack[this._stateStack.length - 1];
-        return state[name] || defaultValue;
+        var val = state[name];
+        if (val === undefined) {
+          return defaultValue;
+        }
+        return val;
       },
       set: function(value) {
         var state = this._stateStack[this._stateStack.length - 1];
