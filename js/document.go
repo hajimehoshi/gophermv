@@ -275,6 +275,16 @@ CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
   _gophermv_ebitenImageClearRect(this._canvas._ebitenImage, x, y, width, height);
 };
 
+CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth) {
+  // Used at Bitmap.prototype._drawTextOutline
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
+  // Used at Bitmap.prototype._drawTextBody
+  // TODO: Implement this?
+};
+
 (function() {
   function clone(style) {
     var result = {};
