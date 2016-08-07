@@ -38,6 +38,37 @@ Graphics.isFontLoaded = function(name) {
   return true;
 };
 
+Stage.prototype.initialize = function() {
+  this._children = [];
+};
+
+Object.defineProperty(Stage.prototype, 'children', {
+  get: function() { return this._children; },
+});
+
+Stage.prototype.addChild = function(child) {
+  return this.addChildAt(child, this._children.length);
+};
+
+Stage.prototype.addChildAt = function(obj, idx) {
+  this._children.splice(idx, 0, obj);
+  return obj;
+};
+
+Stage.prototype.removeChild = function(obj) {
+  var idx = this._children.indexOf(obj);
+  if (idx === -1) {
+    return;
+  }
+  return this.removeChildAt(idx);
+};
+
+Stage.prototype.removeChildAt = function(idx) {
+  var obj = this._children[idx];
+  this._children.splice(idx, 1);
+  return obj;
+};
+
 WebAudio._detectCodecs = function() {
   this._canPlayOgg = true;
   this._canPlayM4a = false;

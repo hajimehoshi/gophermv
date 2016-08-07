@@ -16,8 +16,43 @@ package js
 
 const pixiSrc = `
 var PIXI = {};
-PIXI.Point = function() {};
-PIXI.Rectangle = function() {};
+
+PIXI.Point = function(x, y) {
+  this._x = x;
+  this._y = y;
+};
+
+Object.defineProperty(PIXI.Point.prototype, 'x', {
+  get: function() { return this._x; },
+});
+
+Object.defineProperty(PIXI.Point.prototype, 'y', {
+  get: function() { return this._y; },
+});
+
+PIXI.Rectangle = function(x, y, width, height) {
+  this._x = x;
+  this._y = y;
+  this._width = width;
+  this._height = height;
+};
+
+Object.defineProperty(PIXI.Rectangle.prototype, 'x', {
+  get: function() { return this._x; },
+});
+
+Object.defineProperty(PIXI.Rectangle.prototype, 'y', {
+  get: function() { return this._y; },
+});
+
+Object.defineProperty(PIXI.Rectangle.prototype, 'width', {
+  get: function() { return this._width; },
+});
+
+Object.defineProperty(PIXI.Rectangle.prototype, 'height', {
+  get: function() { return this._height; },
+});
+
 PIXI.Sprite = function() {};
 PIXI.DisplayObjectContainer = function() {};
 PIXI.TilingSprite = function() {};
