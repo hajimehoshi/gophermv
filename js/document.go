@@ -214,7 +214,41 @@ function CanvasRenderingContext2D() {
 
 CanvasRenderingContext2D.prototype.initialize = function(canvas) {
   this._canvas = canvas;
+  this._stateStack = [{}];
 };
+
+(function() {
+  function desc(name, defaultValue) {
+    return {
+      get: function() {
+        var state = this._stateStack[this._stateStack.length - 1];
+        return state || defaultValue;
+      },
+      set: function(value) {
+        var state = this._stateStack[this._stateStack.length - 1];
+        state[name] = value;
+      },
+    };
+  }
+
+  Object.defineProperties(CanvasRenderingContext2D.prototype, {
+    strokeStyle:              desc('strokeStyle', '#000000'),
+    fillStyle:                desc('fillStyle', '#000000'),
+    globalAlpha:              desc('globalAlpha', 1.0),
+    lineWidth:                desc('lineWidth', 1.0),
+    lineCap:                  desc('lineCap', 'butt'),
+    lineJoin:                 desc('lineJoin', 'miter'),
+    miterLimit:               desc('miterLimit', 10.0),
+    shadowOffsetX:            desc('shadowOffsetX', 0),
+    shadowOffsetY:            desc('shadowOffsetY', 0),
+    shadowBlur:               desc('shadowBlur', 0),
+    shadowColor:              desc('shadowColor', '#000000'),
+    globalCompositeOperation: desc('globalCompositeOperation', 'source-over'),
+    font:                     desc('font', 'normal-weight 10px sans-serif'),
+    textAlign:                desc('textAlign', 'start'),
+    textBaseline:             desc('textBaseline', 'alphabetic'),
+  });
+})();
 
 CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
   if (!this._canvas._ebitenImage) {
@@ -223,12 +257,26 @@ CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
   _gophermv_ebitenImageClearRect(this._canvas._ebitenImage, x, y, width, height);
 };
 
-CanvasRenderingContext2D.prototype.save = function() {
-  // TODO: Implement this
-};
+(function() {
+  function clone(style) {
+    var result = {};
+    for (var attr in style) {
+      if (!style.hasOwnProperty(attr)) {
+        continue;
+      }
+      result[attr] = style[attr];
+    }
+    return result;
+  }
+
+  CanvasRenderingContext2D.prototype.save = function() {
+    var newState = clone(this._stateStack[this._stateStack.length - 1]);
+    this._stateStack.push(newState);
+  };
+})();
 
 CanvasRenderingContext2D.prototype.restore = function() {
-  // TODO: Implement this
+  this._stateStack.pop();
 };
 
 CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
@@ -236,6 +284,7 @@ CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
     throw new Error('clearRect: canvas is not initialized');
   }
   var dst = this._canvas._ebitenImage;
+  // TODO: What if image is a Canvas?
   var src = image._ebitenImage;
   _gophermv_ebitenImageDrawImage(dst, src, x, y);
 };
@@ -286,7 +335,6 @@ func (vm *VM) initDocument() error {
 		return err
 	}
 	if _, err := vm.otto.Run(documentSrc); err != nil {
-		println(err.(*otto.Error).String())
 		return err
 	}
 	return nil
