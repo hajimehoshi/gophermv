@@ -127,6 +127,37 @@ func jsEbitenImageClearRect(vm *VM, call otto.FunctionCall) (interface{}, error)
 	return otto.Value{}, nil
 }
 
+func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error) {
+	ox, err := obj.Get("x")
+	if err != nil {
+		return nil, err
+	}
+	x, err := ox.ToFloat()
+	if err != nil {
+		return nil, err
+	}
+	oy, err := obj.Get("y")
+	if err != nil {
+		return nil, err
+	}
+	y, err := oy.ToFloat()
+	if err != nil {
+		return nil, err
+	}
+	oalpha, err := obj.Get("alpha")
+	if err != nil {
+		return nil, err
+	}
+	alpha, err := oalpha.ToFloat()
+	if err != nil {
+		return nil, err
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(x, y)
+	op.ColorM.Scale(1, 1, 1, alpha)
+	return op, nil
+}
+
 func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	odst, err := call.Argument(0).Export()
 	if err != nil {
@@ -138,16 +169,10 @@ func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error)
 		return otto.Value{}, err
 	}
 	src := osrc.(*ebiten.Image)
-	x, err := call.Argument(2).ToInteger()
+	op, err := toEbitenDrawImageOptions(call.Argument(2).Object())
 	if err != nil {
 		return otto.Value{}, err
 	}
-	y, err := call.Argument(3).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
 	if err := dst.DrawImage(src, op); err != nil {
 		return otto.Value{}, err
 	}

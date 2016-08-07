@@ -230,7 +230,7 @@ CanvasRenderingContext2D.prototype.initialize = function(canvas) {
     return {
       get: function() {
         var state = this._stateStack[this._stateStack.length - 1];
-        return state || defaultValue;
+        return state[name] || defaultValue;
       },
       set: function(value) {
         var state = this._stateStack[this._stateStack.length - 1];
@@ -294,7 +294,12 @@ CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
   var dst = this._canvas._ebitenImage;
   // TODO: What if image is a Canvas?
   var src = image._ebitenImage;
-  _gophermv_ebitenImageDrawImage(dst, src, x, y);
+  var op = {
+    x:     x,
+    y:     y,
+    alpha: this.globalAlpha,
+  };
+  _gophermv_ebitenImageDrawImage(dst, src, op);
 };
 
 function AudioContext() {
