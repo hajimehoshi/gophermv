@@ -175,6 +175,10 @@ function Canvas() {
 }
 
 Object.defineProperty(Canvas.prototype, 'width', {
+  get: function() {
+    var size = _gophermv_ebitenImageSize(this._ebitenImage);
+    return size[0];
+  },
   set: function(value) {
     this._width = value;
     if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
@@ -184,6 +188,10 @@ Object.defineProperty(Canvas.prototype, 'width', {
 });
 
 Object.defineProperty(Canvas.prototype, 'height', {
+  get: function() {
+    var size = _gophermv_ebitenImageSize(this._ebitenImage);
+    return size[1];
+  },
   set: function(value) {
     this._height = value;
     if (!this._ebitenImage && 0 < this._width && 0 < this._height) {
