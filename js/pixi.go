@@ -56,14 +56,19 @@ Object.defineProperty(PIXI.Rectangle.prototype, 'height', {
 
 PIXI.DisplayObject = function() {};
 
-
 PIXI.DisplayObjectContainer = function() {
   PIXI.DisplayObject.call(this);
   this._children = [];
+  // TODO: Use this when rendering an image
+  this._scale = {x: 1, y: 1};
 };
 
 PIXI.DisplayObjectContainer.prototype = Object.create(PIXI.DisplayObject.prototype);
 PIXI.DisplayObjectContainer.prototype.constructor = PIXI.DisplayObjectContainer;
+
+Object.defineProperty(PIXI.DisplayObjectContainer.prototype, 'scale', {
+  get: function() { return this._scale; },
+});
 
 Object.defineProperty(PIXI.DisplayObjectContainer.prototype, 'children', {
   get: function() { return this._children; },

@@ -159,6 +159,47 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 	return op, nil
 }
 
+func jsEbitenImageFillRect(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	oimg, err := call.Argument(0).Export()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	img := oimg.(*ebiten.Image)
+	x, err := call.Argument(1).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	y, err := call.Argument(2).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	width, err := call.Argument(3).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	height, err := call.Argument(4).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	clr, err := call.Argument(5).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	r := float64((clr >> 24) & 0xff) / 0xff
+	g := float64((clr >> 16) & 0xff) / 0xff
+	b := float64((clr >> 8) & 0xff) / 0xff
+	a := float64((clr) & 0xff) / 0xff
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
+	op.GeoM.Translate(float64(x), float64(y))
+	op.ColorM.Translate(r, g, b, a)
+	op.CompositeMode = ebiten.CompositeModeCopy
+	if err := img.DrawImage(emptyImage, op); err != nil {
+		return otto.Value{}, err
+	}
+	return otto.Value{}, nil
+}
+
 func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	odst, err := call.Argument(0).Export()
 	if err != nil {
@@ -231,6 +272,9 @@ func (vm *VM) initEbitenImage() error {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_ebitenImageDrawImage", wrapFunc(jsEbitenImageDrawImage, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_ebitenImageFillRect", wrapFunc(jsEbitenImageFillRect, vm)); err != nil {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_ebitenImagePixels", wrapFunc(jsEbitenImagePixels, vm)); err != nil {

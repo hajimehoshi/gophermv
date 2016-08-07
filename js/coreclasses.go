@@ -61,6 +61,7 @@ WebAudio.prototype._load = function(url) {
   this._loopLength = 0;
   this._onLoad();
 };
+WebAudio.prototype._startPlaying = function() {};
 
 Input._setupEventHandlers = function() {
   // Do nothing
