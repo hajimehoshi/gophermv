@@ -56,32 +56,11 @@ func NewVM(pwd string) (*VM, error) {
 	return vm, nil
 }
 
-const pseudoPixiSrc = `
-var PIXI = {};
-PIXI.Point = function() {};
-PIXI.Rectangle = function() {};
-PIXI.Sprite = function() {};
-PIXI.DisplayObjectContainer = function() {};
-PIXI.TilingSprite = function() {};
-PIXI.AbstractFilter = function() {};
-PIXI.DisplayObject = function() {};
-PIXI.Stage = function() {};
-
-// Called at Bitmap
-PIXI.BaseTexture = function() {};
-PIXI.BaseTexture.prototype.dirty = function() {
-};
-PIXI.scaleModes = {
-  NEAREST: 0,
-  LINEAR: 1,
-};
-`
-
 func (vm *VM) init() error {
 	if err := vm.initDocument(); err != nil {
 		return err
 	}
-	if _, err := vm.otto.Run(pseudoPixiSrc); err != nil {
+	if err := vm.initPixi(); err != nil {
 		return err
 	}
 	if err := vm.initEbitenImage(); err != nil {
