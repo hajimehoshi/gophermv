@@ -130,6 +130,16 @@ HTMLBodyElement.prototype.appendChild = function(child) {
   throw new Error('appendChild: not supported element: ' + JSON.stringify(child));
 };
 
+HTMLBodyElement.prototype._canvasEbitenImages = function() {
+  return this._canvasElements.sort(function(a, b) {
+    var az = a.style.zIndex || 0;
+    var bz = b.style.zIndex || 0;
+    return -(az - bz);
+  }).map(function(e) {
+    return e._ebitenImage;
+  });
+};
+
 function HTMLScriptElement() {
 }
 

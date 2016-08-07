@@ -129,7 +129,9 @@ func (vm *VM) Run() error {
 	update := func(screen *ebiten.Image) error {
 		select {
 		case <-vm.updatingFrameCh:
-			// Update
+			if err := vm.updateScreen(screen); err != nil {
+				return err
+			}
 			vm.updatedFrameCh <- struct{}{}
 		case err := <-vmError:
 			return err
@@ -139,6 +141,27 @@ func (vm *VM) Run() error {
 	// TODO: Fix the title
 	if err := ebiten.Run(update, 816, 624, 1, "test"); err != nil {
 		return detailedError(err)
+	}
+	return nil
+}
+
+func (vm *VM) updateScreen(screen *ebiten.Image) error {
+	type canvas struct {
+		image  *ebiten.Image
+		zIndex int
+	}
+	oimgs, err := vm.otto.Run("document.body._canvasEbitenImages()")
+	if err != nil {
+		return err
+	}
+	imgs, err := oimgs.Export()
+	if err != nil {
+		return err
+	}
+	for _, img := range imgs.([]*ebiten.Image) {
+		if err := screen.DrawImage(img, &ebiten.DrawImageOptions{}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
