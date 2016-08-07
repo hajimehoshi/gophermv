@@ -118,7 +118,7 @@ func jsEbitenImageClearRect(vm *VM, call otto.FunctionCall) (interface{}, error)
 		return otto.Value{}, nil
 	}
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(width) / emptyImageSize, float64(height) / emptyImageSize)
+	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
 	op.CompositeMode = ebiten.CompositeModeClear
 	if err := img.DrawImage(emptyImage, op); err != nil {
@@ -180,6 +180,46 @@ func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error)
 	return otto.Value{}, nil
 }
 
+func jsEbitenImagePixels(vm *VM, call otto.FunctionCall) (interface{}, error) {
+	oimg, err := call.Argument(0).Export()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	img := oimg.(*ebiten.Image)
+	x, err := call.Argument(1).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	y, err := call.Argument(2).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	width, err := call.Argument(3).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	height, err := call.Argument(4).ToInteger()
+	if err != nil {
+		return otto.Value{}, err
+	}
+	println(x, y)
+	w, h := img.Size()
+	println(w, h)
+	data := make([]uint8, width*height*4)
+	for j := int(y); j < int(y+height); j++ {
+		for i := int(x); i < int(x+width); i++ {
+			clr := img.At(i, j)
+			r, g, b, a := clr.RGBA()
+			idx := (i - int(x)) + (j-int(y))*int(width)
+			data[4*idx] = uint8(r >> 8)
+			data[4*idx+1] = uint8(g >> 8)
+			data[4*idx+2] = uint8(b >> 8)
+			data[4*idx+3] = uint8(a >> 8)
+		}
+	}
+	return data, nil
+}
+
 func (vm *VM) initEbitenImage() error {
 	if err := vm.otto.Set("_gophermv_newEbitenImage", wrapFunc(jsNewEbitenImage, vm)); err != nil {
 		return err
@@ -194,6 +234,9 @@ func (vm *VM) initEbitenImage() error {
 		return err
 	}
 	if err := vm.otto.Set("_gophermv_ebitenImageDrawImage", wrapFunc(jsEbitenImageDrawImage, vm)); err != nil {
+		return err
+	}
+	if err := vm.otto.Set("_gophermv_ebitenImagePixels", wrapFunc(jsEbitenImagePixels, vm)); err != nil {
 		return err
 	}
 	return nil

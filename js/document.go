@@ -322,6 +322,29 @@ CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
   _gophermv_ebitenImageDrawImage(dst, src, op);
 };
 
+CanvasRenderingContext2D.prototype.getImageData = function(x, y, width, height) {
+  var data = _gophermv_ebitenImagePixels(this._canvas._ebitenImage, x, y, width, height);
+  return new ImageData(data, width, height);
+};
+
+function ImageData(data, width, height) {
+  this._data = data;
+  this._width = width;
+  this._height = height;
+}
+
+Object.defineProperty(ImageData.prototype, 'width', {
+  get: function() { return this._width; },
+});
+
+Object.defineProperty(ImageData.prototype, 'height', {
+  get: function() { return this._height; },
+});
+
+Object.defineProperty(ImageData.prototype, 'data', {
+  get: function() { return this._data; },
+});
+
 function AudioContext() {
 }
 
