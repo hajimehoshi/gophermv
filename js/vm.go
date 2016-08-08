@@ -112,11 +112,16 @@ func (vm *VM) loop() error {
 
 func (vm *VM) Run() error {
 	vmError := make(chan error)
+	gameStarted := make(chan struct{})
 	go func() {
+		<-gameStarted
 		vmError <- vm.loop()
 	}()
 	update := func(screen *ebiten.Image) error {
 		select {
+		case gameStarted <- struct{}{}:
+			close(gameStarted)
+			gameStarted = nil
 		case <-vm.updatingFrameCh:
 			if err := vm.updateScreen(screen); err != nil {
 				return err
