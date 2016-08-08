@@ -109,7 +109,7 @@ PIXI.Sprite.prototype._render = function(screen) {
     var op = {
       x: 0,
       y: 0,
-      alpha: 1,
+      alpha: this.alpha,
     };
     _gophermv_ebitenImageDrawImage(screen, this.bitmap.canvas._ebitenImage, op);
   }
