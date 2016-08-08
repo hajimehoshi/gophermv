@@ -18,33 +18,39 @@ const pixiSrc = `
 var PIXI = {};
 
 PIXI.Point = function(x, y) {
-  this._x = x;
-  this._y = y;
+  this._x = x || 0;
+  this._y = y || 0;
 };
 Object.defineProperty(PIXI.Point.prototype, 'x', {
   get: function() { return this._x; },
+  set: function(value) { this._x = value; },
 });
 Object.defineProperty(PIXI.Point.prototype, 'y', {
   get: function() { return this._y; },
+  set: function(value) { this._y = value; },
 });
 
 PIXI.Rectangle = function(x, y, width, height) {
-  this._x = x;
-  this._y = y;
-  this._width = width;
-  this._height = height;
+  this._x = x || 0;
+  this._y = y || 0;
+  this._width = width || 0;
+  this._height = height || 0;
 };
 Object.defineProperty(PIXI.Rectangle.prototype, 'x', {
   get: function() { return this._x; },
+  set: function(value) { this._x = value; },
 });
 Object.defineProperty(PIXI.Rectangle.prototype, 'y', {
   get: function() { return this._y; },
+  set: function(value) { this._y = value; },
 });
 Object.defineProperty(PIXI.Rectangle.prototype, 'width', {
   get: function() { return this._width; },
+  set: function(value) { this._width = value; },
 });
 Object.defineProperty(PIXI.Rectangle.prototype, 'height', {
   get: function() { return this._height; },
+  set: function(value) { this._height = value; },
 });
 
 PIXI.DisplayObject = function() {};
@@ -53,6 +59,8 @@ PIXI.DisplayObjectContainer = function() {
   this._children = [];
   // TODO: Use this when rendering an image
   this._scale = {x: 1, y: 1};
+  this.alpha = 1;
+  this.visible = true;
 };
 PIXI.DisplayObjectContainer.prototype = Object.create(PIXI.DisplayObject.prototype);
 PIXI.DisplayObjectContainer.prototype.constructor = PIXI.DisplayObjectContainer;
@@ -105,10 +113,10 @@ PIXI.Sprite.prototype._render = function(screen) {
     if (!this.bitmap.canvas._ebitenImage) {
       throw new Error('_render: this.bitmap.canvas._ebitenImage is not set');
     }
-    // TODO: Implement this correctly
+    var frame = this.texture.frame;
     var op = {
-      x: 0,
-      y: 0,
+      x:     frame.x,
+      y:     frame.y,
       alpha: this.alpha,
     };
     _gophermv_ebitenImageDrawImage(screen, this.bitmap.canvas._ebitenImage, op);
@@ -127,9 +135,14 @@ PIXI.TilingSprite.prototype.constructor = PIXI.TilingSprite;
 PIXI.BaseTexture = function() {};
 PIXI.BaseTexture.prototype.dirty = function() {};
 
-PIXI.Texture = function() {};
+PIXI.Texture = function() {
+  this._frame = new PIXI.Rectangle();
+};
+Object.defineProperty(PIXI.Texture.prototype, 'frame', {
+  get: function() { return this._frame; },
+});
 PIXI.Texture.prototype.setFrame = function(frame) {
-  // TODO: Implement this
+  this._frame = frame;
 };
 
 PIXI.AbstractFilter = function() {};
