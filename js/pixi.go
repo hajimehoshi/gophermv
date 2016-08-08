@@ -21,11 +21,9 @@ PIXI.Point = function(x, y) {
   this._x = x;
   this._y = y;
 };
-
 Object.defineProperty(PIXI.Point.prototype, 'x', {
   get: function() { return this._x; },
 });
-
 Object.defineProperty(PIXI.Point.prototype, 'y', {
   get: function() { return this._y; },
 });
@@ -36,53 +34,41 @@ PIXI.Rectangle = function(x, y, width, height) {
   this._width = width;
   this._height = height;
 };
-
 Object.defineProperty(PIXI.Rectangle.prototype, 'x', {
   get: function() { return this._x; },
 });
-
 Object.defineProperty(PIXI.Rectangle.prototype, 'y', {
   get: function() { return this._y; },
 });
-
 Object.defineProperty(PIXI.Rectangle.prototype, 'width', {
   get: function() { return this._width; },
 });
-
 Object.defineProperty(PIXI.Rectangle.prototype, 'height', {
   get: function() { return this._height; },
 });
 
-
 PIXI.DisplayObject = function() {};
-
 PIXI.DisplayObjectContainer = function() {
   PIXI.DisplayObject.call(this);
   this._children = [];
   // TODO: Use this when rendering an image
   this._scale = {x: 1, y: 1};
 };
-
 PIXI.DisplayObjectContainer.prototype = Object.create(PIXI.DisplayObject.prototype);
 PIXI.DisplayObjectContainer.prototype.constructor = PIXI.DisplayObjectContainer;
-
 Object.defineProperty(PIXI.DisplayObjectContainer.prototype, 'scale', {
   get: function() { return this._scale; },
 });
-
 Object.defineProperty(PIXI.DisplayObjectContainer.prototype, 'children', {
   get: function() { return this._children; },
 });
-
 PIXI.DisplayObjectContainer.prototype.addChild = function(child) {
   return this.addChildAt(child, this._children.length);
 };
-
 PIXI.DisplayObjectContainer.prototype.addChildAt = function(obj, idx) {
   this._children.splice(idx, 0, obj);
   return obj;
 };
-
 PIXI.DisplayObjectContainer.prototype.removeChild = function(obj) {
   var idx = this._children.indexOf(obj);
   if (idx === -1) {
@@ -90,20 +76,22 @@ PIXI.DisplayObjectContainer.prototype.removeChild = function(obj) {
   }
   return this.removeChildAt(idx);
 };
-
 PIXI.DisplayObjectContainer.prototype.removeChildAt = function(idx) {
   var obj = this._children[idx];
   this._children.splice(idx, 1);
   return obj;
 };
-
+PIXI.DisplayObjectContainer.prototype._render = function(screen) {
+  for (var i = 0; i < this.children.length; i++) {
+    this.children[i]._render(screen);
+  }
+};
 
 PIXI.Stage = function() {
   PIXI.DisplayObjectContainer.call(this);
 };
 PIXI.Stage.prototype = Object.create(PIXI.DisplayObjectContainer.prototype);
 PIXI.Stage.prototype.constructor = PIXI.Stage;
-
 
 PIXI.Sprite = function(texture) {
   PIXI.DisplayObjectContainer.call(this);
@@ -112,7 +100,23 @@ PIXI.Sprite = function(texture) {
 };
 PIXI.Sprite.prototype = Object.create(PIXI.DisplayObjectContainer.prototype);
 PIXI.Sprite.prototype.constructor = PIXI.Sprite;
-
+PIXI.Sprite.prototype._render = function(screen) {
+  if (this.bitmap) {
+    if (!this.bitmap.canvas._ebitenImage) {
+      throw new Error('_render: this.bitmap.canvas._ebitenImage is not set');
+    }
+    // TODO: Implement this correctly
+    var op = {
+      x: 0,
+      y: 0,
+      alpha: 1,
+    };
+    _gophermv_ebitenImageDrawImage(screen, this.bitmap.canvas._ebitenImage, op);
+  }
+  for (var i = 0; i < this.children.length; i++) {
+    this.children[i]._render(screen);
+  }
+};
 
 PIXI.TilingSprite = function(texture) {
   PIXI.Sprite.call(this, texture);
@@ -120,17 +124,13 @@ PIXI.TilingSprite = function(texture) {
 PIXI.TilingSprite.prototype = Object.create(PIXI.Sprite.prototype);
 PIXI.TilingSprite.prototype.constructor = PIXI.TilingSprite;
 
-
 PIXI.BaseTexture = function() {};
 PIXI.BaseTexture.prototype.dirty = function() {};
 
-
 PIXI.Texture = function() {};
-
 PIXI.Texture.prototype.setFrame = function(frame) {
   // TODO: Implement this
 };
-
 
 PIXI.AbstractFilter = function() {};
 

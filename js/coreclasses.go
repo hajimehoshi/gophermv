@@ -30,9 +30,10 @@ Graphics._createModeBox = function() {};
 Graphics._createFontLoader = function() {};
 
 Graphics._createRenderer = function() {
+  var canvas = this._canvas;
   this._renderer = {
     render: function(stage) {
-      // TODO: Implement this
+      stage._render(canvas._ebitenImage);
     },
   };
 };
