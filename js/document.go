@@ -382,12 +382,14 @@ CanvasRenderingContext2D.prototype.drawImage = function(image) {
       src: [sx, sy, sx+sw, sy+sh],
       dst: [dx, dy, dx+dw, dy+dh],
     }
-  ]
+  ];
   var dst = this._canvas._ebitenImage;
   // TODO: What if |image| is a Canvas?
   var src = image._ebitenImage;
   // TODO: Use composition mode
+  var state = this._stateStack[this._stateStack.length - 1];
   var op = {
+    geom:       (state['transform'] || [1, 0, 0, 1, 0, 0]),
     imageParts: imageParts,
     alpha:      this.globalAlpha,
   };

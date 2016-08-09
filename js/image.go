@@ -174,8 +174,40 @@ func objectToInts(obj *otto.Object) ([]int, error) {
 	return values, nil
 }
 
+func objectToFloats(obj *otto.Object) ([]float64, error) {
+	olen, err := obj.Get("length")
+	if err != nil {
+		return nil, err
+	}
+	len, err := olen.ToInteger()
+	if err != nil {
+		return nil, err
+	}
+	values := make([]float64, int(len))
+	for i := 0; i < int(len); i++ {
+		obj, err := obj.Get(strconv.Itoa(i))
+		if err != nil {
+			return nil, err
+		}
+		val, err := obj.ToFloat()
+		if err != nil {
+			return nil, err
+		}
+		values[i] = val
+	}
+	return values, nil
+}
+
 func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error) {
 	oparts, err := obj.Get("imageParts")
+	if err != nil {
+		return nil, err
+	}
+	ogeom, err := obj.Get("geom")
+	if err != nil {
+		return nil, err
+	}
+	geomVals, err := objectToFloats(ogeom.Object())
 	if err != nil {
 		return nil, err
 	}
@@ -234,6 +266,12 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 		parts[i] = p
 	}
 	op.ImageParts = imageParts(parts)
+	op.GeoM.SetElement(0, 0, geomVals[0])
+	op.GeoM.SetElement(1, 0, geomVals[1])
+	op.GeoM.SetElement(0, 1, geomVals[2])
+	op.GeoM.SetElement(1, 1, geomVals[3])
+	op.GeoM.SetElement(0, 2, geomVals[4])
+	op.GeoM.SetElement(1, 2, geomVals[5])
 	op.ColorM.Scale(1, 1, 1, alpha)
 	// TODO: Use composite mode
 	return op, nil
