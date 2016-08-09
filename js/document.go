@@ -339,17 +339,57 @@ CanvasRenderingContext2D.prototype.restore = function() {
   this._stateStack.pop();
 };
 
-CanvasRenderingContext2D.prototype.drawImage = function(image, x, y) {
+CanvasRenderingContext2D.prototype.drawImage = function(image) {
   if (!this._canvas._ebitenImage) {
-    throw new Error('clearRect: canvas is not initialized');
+    throw new Error('drawImage: canvas is not initialized');
   }
+  var sx = 0;
+  var sy = 0;
+  var sw = image.width;
+  var sh = image.height
+  var dx = 0;
+  var dy = 0;
+  var dw = sw;
+  var dh = sh;
+  switch (arguments.length) {
+  case 3:
+    dx = arguments[1];
+    dy = arguments[2];
+    break;
+  case 5:
+    dx = arguments[1];
+    dy = arguments[2];
+    dw = arguments[3];
+    dh = arguments[4];
+    sw = dw
+    sh = dh
+    break;
+  case 9:
+    sx = arguments[1];
+    sy = arguments[2];
+    sw = arguments[3];
+    sh = arguments[4];
+    dx = arguments[5];
+    dy = arguments[6];
+    dw = arguments[7];
+    dh = arguments[8];
+    break;
+  default:
+    throw new Error('drawImage: invalid argument num: ' + arguments.length);
+  }
+  var imageParts = [
+    {
+      src: [sx, sy, sx+sw, sy+sh],
+      dst: [dx, dy, dx+dw, dy+dh],
+    }
+  ]
   var dst = this._canvas._ebitenImage;
-  // TODO: What if image is a Canvas?
+  // TODO: What if |image| is a Canvas?
   var src = image._ebitenImage;
+  // TODO: Use composition mode
   var op = {
-    x:     x,
-    y:     y,
-    alpha: this.globalAlpha,
+    imageParts: imageParts,
+    alpha:      this.globalAlpha,
   };
   _gophermv_ebitenImageDrawImage(dst, src, op);
 };

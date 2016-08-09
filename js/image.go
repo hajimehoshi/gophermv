@@ -15,11 +15,13 @@
 package js
 
 import (
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten"
 	"github.com/robertkrimen/otto"
@@ -127,20 +129,53 @@ func jsEbitenImageClearRect(vm *VM, call otto.FunctionCall) (interface{}, error)
 	return otto.Value{}, nil
 }
 
+type imagePart struct {
+	sx0, sy0, sx1, sy1 int
+	dx0, dy0, dx1, dy1 int
+}
+
+type imageParts []*imagePart
+
+func (p imageParts) Len() int {
+	return len(p)
+}
+
+func (p imageParts) Src(i int) (int, int, int, int) {
+	part := p[i]
+	return part.sx0, part.sy0, part.sx1, part.sy1
+}
+
+func (p imageParts) Dst(i int) (int, int, int, int) {
+	part := p[i]
+	return part.dx0, part.dy0, part.dx1, part.dy1
+}
+
+func objectToInts(obj *otto.Object) ([]int, error) {
+	olen, err := obj.Get("length")
+	if err != nil {
+		return nil, err
+	}
+	len, err := olen.ToInteger()
+	if err != nil {
+		return nil, err
+	}
+	values := make([]int, int(len))
+	for i := 0; i < int(len); i++ {
+		obj, err := obj.Get(strconv.Itoa(i))
+		if err != nil {
+			return nil, err
+		}
+		val, err := obj.ToInteger()
+		if err != nil {
+			return nil, err
+		}
+		values[i] = int(val)
+	}
+	return values, nil
+}
+
 func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error) {
-	ox, err := obj.Get("x")
-	if err != nil {
-		return nil, err
-	}
-	x, err := ox.ToFloat()
-	if err != nil {
-		return nil, err
-	}
-	oy, err := obj.Get("y")
-	if err != nil {
-		return nil, err
-	}
-	y, err := oy.ToFloat()
+	oparts, err := obj.Get("imageParts")
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +188,52 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 		return nil, err
 	}
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(x, y)
+	ol, err := oparts.Object().Get("length")
+	if err != nil {
+		return nil, err
+	}
+	l, err := ol.ToInteger()
+	if err != nil {
+		return nil, err
+	}
+	parts := make([]*imagePart, l)
+	for i := range parts {
+		op, err := oparts.Object().Get(strconv.Itoa(i))
+		if err != nil {
+			return nil, err
+		}
+		if op == (otto.Value{}) {
+			return nil, fmt.Errorf("js: invalid imageParts")
+		}
+		srcv, err := op.Object().Get("src")
+		if err != nil {
+			return nil, err
+		}
+		dstv, err := op.Object().Get("dst")
+		if err != nil {
+			return nil, err
+		}
+		src, err := objectToInts(srcv.Object())
+		if err != nil {
+			return nil, err
+		}
+		dst, err := objectToInts(dstv.Object())
+		if err != nil {
+			return nil, err
+		}
+		p := &imagePart{
+			sx0: src[0],
+			sy0: src[1],
+			sx1: src[2],
+			sy1: src[3],
+			dx0: dst[0],
+			dy0: dst[1],
+			dx1: dst[2],
+			dy1: dst[3],
+		}
+		parts[i] = p
+	}
+	op.ImageParts = imageParts(parts)
 	op.ColorM.Scale(1, 1, 1, alpha)
 	// TODO: Use composite mode
 	return op, nil
