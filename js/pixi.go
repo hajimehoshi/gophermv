@@ -113,6 +113,7 @@ PIXI.Sprite.prototype._render = function(screen) {
     if (!this.bitmap.canvas._ebitenImage) {
       throw new Error('_render: this.bitmap.canvas._ebitenImage is not set');
     }
+    // TODO: Use anchor!
     var frame = this.texture.frame;
     var op = {
       x:     frame.x,

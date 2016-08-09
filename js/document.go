@@ -282,6 +282,11 @@ CanvasRenderingContext2D.prototype.clearRect = function(x, y, width, height) {
   _gophermv_ebitenImageClearRect(this._canvas._ebitenImage, x, y, width, height);
 };
 
+CanvasRenderingContext2D.prototype.setTransform = function(a, b, c, d, tx, ty) {
+  var state = this._stateStack[this._stateStack.length - 1];
+  state['transform'] = [a, b, c, d, tx, ty];
+};
+
 CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth) {
   // Used at Bitmap.prototype._drawTextOutline
   // TODO: Implement this?
@@ -289,6 +294,26 @@ CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth)
 
 CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
   // Used at Bitmap.prototype._drawTextBody
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.beginPath = function() {
+  // Used at WindowLayer.prototype._renderCanvas
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.closePath = function() {
+  // Used at WindowLayer.prototype._renderCanvas
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.clip = function() {
+  // Used at WindowLayer.prototype._renderCanvas
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.rect = function(x, y, width, height) {
+  // Used at WindowLayer.prototype._renderCanvas
   // TODO: Implement this?
 };
 

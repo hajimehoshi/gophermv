@@ -60,9 +60,6 @@ func (vm *VM) init() error {
 	if err := vm.initDocument(); err != nil {
 		return err
 	}
-	if err := vm.initPixi(); err != nil {
-		return err
-	}
 	if err := vm.initEbitenImage(); err != nil {
 		return err
 	}
@@ -71,8 +68,6 @@ func (vm *VM) init() error {
 
 var (
 	skips = map[string]struct{}{
-		// Why: pixi.js will be replaced with Ebiten layer.
-		filepath.Join("js", "libs", "pixi.js"): struct{}{},
 		// Why: Some elements are not defined.
 		filepath.Join("js", "libs", "fpsmeter.js"): struct{}{},
 	}
