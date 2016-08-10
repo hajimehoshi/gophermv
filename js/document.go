@@ -87,9 +87,19 @@ Window.prototype.requestAnimationFrame = function(func) {
   _gophermv_requestAnimationFrame(func);
 };
 
+Window.prototype.addEventListener = function() {
+  // TODO: Implement this
+};
+
 function Document() {
   this.initialize.apply(this, arguments);
 }
+
+Object.defineProperty(Document.prototype, 'body', {
+  get: function() {
+    return this._body;
+  },
+});
 
 Document.prototype.initialize = function() {
   this._body = new HTMLBodyElement();
@@ -99,27 +109,41 @@ Document.prototype.createElement = function(name) {
   switch (name) {
   case 'script':
     return new HTMLScriptElement();
+  case 'div':
+    return new HTMLDivElement();
   case 'canvas':
-    return new Canvas();
+    return new HTMLCanvasElement();
   }
   throw new Error('createElement: not supported element: ' + name);
 };
 
-Object.defineProperty(Document.prototype, 'body', {
+Document.prototype.addEventListener = function() {
+  // TODO: Implement this
+};
+
+function HTMLElement() {
+}
+
+Object.defineProperty(HTMLElement.prototype, 'style', {
   get: function() {
-    return this._body;
+    if (!this._style) {
+      this._style = {};
+    }
+    return this._style;
   },
 });
 
 function HTMLBodyElement() {
 }
+HTMLBodyElement.prototype = Object.create(HTMLElement.prototype);
+HTMLBodyElement.prototype.constructor = HTMLBodyElement
 
 HTMLBodyElement.prototype.appendChild = function(child) {
   if (child instanceof HTMLScriptElement) {
     _gophermv_appendScript(child.src);
     return;
   }
-  if (child instanceof Canvas) {
+  if (child instanceof HTMLCanvasElement) {
     // TODO: Draw canvas elements
     if (!this._canvasElements) {
       this._canvasElements = [];
@@ -142,6 +166,13 @@ HTMLBodyElement.prototype._canvasEbitenImages = function() {
 
 function HTMLScriptElement() {
 }
+HTMLScriptElement.prototype = Object.create(HTMLElement.prototype);
+HTMLScriptElement.prototype.constructor = HTMLScriptElement
+
+function HTMLDivElement() {
+}
+HTMLDivElement.prototype = Object.create(HTMLElement.prototype);
+HTMLDivElement.prototype.constructor = HTMLDivElement
 
 function Image() {
   this.initialize.apply(this, arguments);
@@ -177,10 +208,12 @@ Object.defineProperty(Image.prototype, 'onload', {
   },
 });
 
-function Canvas() {
+function HTMLCanvasElement() {
 }
+HTMLCanvasElement.prototype = Object.create(HTMLElement.prototype);
+HTMLCanvasElement.prototype.constructor = HTMLCanvasElement
 
-Object.defineProperty(Canvas.prototype, 'width', {
+Object.defineProperty(HTMLCanvasElement.prototype, 'width', {
   get: function() {
     var size = _gophermv_ebitenImageSize(this._ebitenImage);
     return size[0];
@@ -197,7 +230,7 @@ Object.defineProperty(Canvas.prototype, 'width', {
   },
 });
 
-Object.defineProperty(Canvas.prototype, 'height', {
+Object.defineProperty(HTMLCanvasElement.prototype, 'height', {
   get: function() {
     var size = _gophermv_ebitenImageSize(this._ebitenImage);
     return size[1];
@@ -213,21 +246,17 @@ Object.defineProperty(Canvas.prototype, 'height', {
   },
 });
 
-Object.defineProperty(Canvas.prototype, 'style', {
-  get: function() {
-    if (!this._style) {
-      this._style = {};
-    }
-    return this._style;
-  },
-});
-
-Canvas.prototype.getContext = function(mode) {
+HTMLCanvasElement.prototype.getContext = function(mode) {
   if (mode === '2d') {
     return new CanvasRenderingContext2D(this);
   }
   throw new Error('getContext: not supported mode: ' + mode);
 };
+
+HTMLCanvasElement.prototype.addEventListener = function() {
+  // TODO: Implement this
+};
+
 
 function CanvasRenderingContext2D() {
   this.initialize.apply(this, arguments);
