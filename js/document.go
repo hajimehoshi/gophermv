@@ -403,24 +403,27 @@ CanvasRenderingContext2D.prototype.fillRect = function(x, y, width, height) {
   var dst = this._canvas._ebitenImage;
   var color = 0;
   var m = null;
+  var alpha = 0xff;
   if (m = this.fillStyle.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)) {
-    color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8) | 0xff;
+    color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8);
   } else if (m = this.fillStyle.match(/^rgba\((\d+),\s*(\d+),\s*(\d+)\s*([\d.]+)\)$/)) {
     alpha = (parseFloat(m[4]) * 255) | 0;
-    color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8) | alpha;
+    color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8);
   } else if (m = this.fillStyle.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/)) {
     var r = parseInt(m[1], 16) * 0x11;
     var g = parseInt(m[2], 16) * 0x11;
     var b = parseInt(m[3], 16) * 0x11;
-    color = (r << 24) | (g << 16) | (b << 8) | 0xff;
+    color = (r << 24) | (g << 16) | (b << 8);
   } else if (m = this.fillStyle.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/)) {
     var r = parseInt(m[1], 16);
     var g = parseInt(m[2], 16);
     var b = parseInt(m[3], 16);
-    color = (r << 24) | (g << 16) | (b << 8) | 0xff;
+    color = (r << 24) | (g << 16) | (b << 8);
   } else {
     throw new Error('invalid style format: ' + this.fillStyle);
   }
+  alpha = (alpha * this.globalAlpha)|0;
+  color |= alpha;
   _gophermv_ebitenImageFillRect(dst, x, y, width, height, color);
 };
 

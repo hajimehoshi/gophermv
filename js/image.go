@@ -17,6 +17,7 @@ package js
 import (
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
@@ -86,6 +87,9 @@ func init() {
 	var err error
 	emptyImage, err = ebiten.NewImage(emptyImageSize, emptyImageSize, ebiten.FilterNearest)
 	if err != nil {
+		panic(err)
+	}
+	if err := emptyImage.Fill(color.White); err != nil {
 		panic(err)
 	}
 }
@@ -310,8 +314,8 @@ func jsEbitenImageFillRect(vm *VM, call otto.FunctionCall) (interface{}, error) 
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
-	op.ColorM.Translate(r, g, b, a)
-	op.CompositeMode = ebiten.CompositeModeCopy
+	op.ColorM.Scale(r, g, b, a)
+	op.CompositeMode = ebiten.CompositeModeSourceOver
 	if err := img.DrawImage(emptyImage, op); err != nil {
 		return otto.Value{}, err
 	}
