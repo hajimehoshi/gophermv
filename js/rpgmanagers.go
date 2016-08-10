@@ -50,6 +50,10 @@ SceneManager.update = function() {
 SceneManager.setupErrorHandlers = function() {
 };
 
+SceneManager.shouldUseCanvasRenderer = function() {
+  return true;
+};
+
 DataManager.loadDataFile = function(name, src) {
   window[name] = null;
   // TODO: Load file async

@@ -29,15 +29,6 @@ Graphics._createFPSMeter = function() {};
 Graphics._createModeBox = function() {};
 Graphics._createFontLoader = function() {};
 
-/*Graphics._createRenderer = function() {
-  var canvas = this._canvas;
-  this._renderer = {
-    render: function(stage) {
-      stage._render(canvas._ebitenImage);
-    },
-  };
-};*/
-
 Graphics._setupEventHandlers = function() {
   // Do nothing
   // TODO: Set input handling
