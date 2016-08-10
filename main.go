@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 
 	"github.com/hajimehoshi/gophermv/js"
 	"golang.org/x/net/html"
@@ -79,8 +80,25 @@ func process(path string) error {
 	return nil
 }
 
+var (
+	cpuProfile = flag.String("cpuprofile", "", "write cpu profile to file")
+)
+
 func main() {
 	flag.Parse()
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		defer pprof.StopCPUProfile()
+	}
+
 	arg := flag.Arg(0)
 	if arg == "" {
 		return

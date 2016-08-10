@@ -87,20 +87,27 @@ func (vm *VM) loop() error {
 				return err
 			}
 			vm.scripts = vm.scripts[1:]
-		} else if 0 < len(vm.onLoadCallbacks) {
+			continue
+		}
+		if 0 < len(vm.onLoadCallbacks) {
 			callback := vm.onLoadCallbacks[0]
 			if _, err := callback.Call(otto.Value{}); err != nil {
 				return err
 			}
 			vm.onLoadCallbacks = vm.onLoadCallbacks[1:]
-		} else if 0 < len(vm.requestAnimationFrameCallbacks) {
+			continue
+		}
+		current := make([]otto.Value, len(vm.requestAnimationFrameCallbacks))
+		copy(current, vm.requestAnimationFrameCallbacks)
+		if 0 < len(current) {
 			vm.updatingFrameCh <- struct{}{}
 			<-vm.updatedFrameCh
-			callback := vm.requestAnimationFrameCallbacks[0]
-			if _, err := callback.Call(otto.Value{}); err != nil {
-				return err
+			for _, callback := range current {
+				if _, err := callback.Call(otto.Value{}); err != nil {
+					return err
+				}
 			}
-			vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[1:]
+			vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[len(current):]
 		}
 	}
 }
@@ -113,6 +120,7 @@ func (vm *VM) Run() error {
 		vmError <- vm.loop()
 	}()
 	update := func(screen *ebiten.Image) error {
+		fmt.Printf("%0.2f\n", ebiten.CurrentFPS())
 		select {
 		case gameStarted <- struct{}{}:
 			close(gameStarted)

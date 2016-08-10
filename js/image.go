@@ -329,7 +329,7 @@ func jsEbitenImageFillRect(vm *VM, call otto.FunctionCall) (interface{}, error) 
 	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
 	op.ColorM.Scale(r, g, b, a)
-	op.CompositeMode = ebiten.CompositeModeSourceOver
+	//op.CompositeMode = ebiten.CompositeModeSourceOver
 	if err := img.DrawImage(emptyImage, op); err != nil {
 		return otto.Value{}, err
 	}
