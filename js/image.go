@@ -15,14 +15,18 @@
 package js
 
 import (
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten"
 	"github.com/robertkrimen/otto"
@@ -44,17 +48,27 @@ func jsNewEbitenImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	return img, nil
 }
 
+var (
+	pngDataURLRe = regexp.MustCompile(`^data:image/png;base64,(.+)$`)
+)
+
 func jsLoadEbitenImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
 	src, err := call.Argument(0).ToString()
 	if err != nil {
 		return otto.Value{}, err
 	}
-	f, err := os.Open(filepath.Join(vm.pwd, src))
-	if err != nil {
-		return otto.Value{}, err
+	var in io.Reader
+	if m := pngDataURLRe.FindStringSubmatch(src); m != nil {
+		in = base64.NewDecoder(base64.StdEncoding, strings.NewReader(m[1]))
+	} else {
+		f, err := os.Open(filepath.Join(vm.pwd, src))
+		if err != nil {
+			return otto.Value{}, err
+		}
+		defer f.Close()
+		in = f
 	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
+	img, _, err := image.Decode(in)
 	if err != nil {
 		return otto.Value{}, err
 	}

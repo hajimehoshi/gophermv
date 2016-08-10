@@ -19,6 +19,8 @@ import (
 )
 
 func (vm *VM) overridePixi(src string) (string, error) {
+	// `(?=...)` is not available in Go regexp.
+	// Replace them with `$a` which never matches anything.
 	re := regexp.MustCompile(`\/.*?\(\?\=.+?\).*?\/`)
 	src = re.ReplaceAllString(src, "/$a/")
 	return src, nil
