@@ -16,7 +16,7 @@ package js
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"text/template"
 
@@ -156,16 +156,23 @@ func (vm *VM) updateScreen(screen *ebiten.Image) error {
 }
 
 func (vm *VM) exec(filename string) error {
-	f, err := os.Open(filepath.Join(vm.pwd, filename))
+	srcb, err := ioutil.ReadFile(filepath.Join(vm.pwd, filename))
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	src, err := vm.otto.Compile(filename, f)
+	src := string(srcb)
+	if filepath.Clean(filename) == filepath.Join("js", "libs", "pixi.js") {
+		var err error
+		src, err = vm.overridePixi(src)
+		if err != nil {
+			return err
+		}
+	}
+	bin, err := vm.otto.Compile(filename, src)
 	if err != nil {
 		return err
 	}
-	if _, err := vm.otto.Run(src); err != nil {
+	if _, err := vm.otto.Run(bin); err != nil {
 		return err
 	}
 	if filepath.Clean(filename) == filepath.Join("js", "rpg_core.js") {
