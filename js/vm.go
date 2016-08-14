@@ -17,6 +17,7 @@ package js
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -266,8 +267,10 @@ func wrapFunc(f Func, vm *VM) func(*duktape.Context) int {
 	return func(*duktape.Context) int {
 		r, err := f(vm)
 		if err != nil {
-			vm.context.PushErrorObject(duktape.ErrError, "%s", err.Error())
-			return -1
+			// TODO: How can we handle the error message?
+			fmt.Fprintf(os.Stderr, "%s", err.Error())
+			vm.context.PushErrorObjectVa(duktape.ErrError, "%s", err.Error())
+			return duktape.ErrRetError
 		}
 		return r
 	}
