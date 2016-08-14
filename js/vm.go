@@ -45,7 +45,6 @@ func NewVM(pwd string) (*VM, error) {
 		return nil, err
 	}
 	runtime.SetFinalizer(vm, (*VM).Destroy)
-	// TODO: Call GC?
 	return vm, nil
 }
 
@@ -109,6 +108,7 @@ func (vm *VM) intToError(result int) error {
 
 func (vm *VM) loop() error {
 	for {
+		// vm.context.Gc(0)
 		if 0 < len(vm.scripts) {
 			if err := vm.exec(vm.scripts[0]); err != nil {
 				return err
