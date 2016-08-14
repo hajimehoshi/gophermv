@@ -25,25 +25,38 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"unsafe"
 
 	"github.com/hajimehoshi/ebiten"
 )
 
 var (
-	imagesInJS = map[*ebiten.Image]struct{}{}
+	// imagesInJS holds images not to be collected by GC.
+	imagesInJS = map[int]*ebiten.Image{}
 )
+
+func (vm *VM) newImageID() int {
+	vm.lastImageID++
+	return vm.lastImageID
+}
 
 func (vm *VM) pushEbitenImage(img *ebiten.Image) {
 	vm.context.PushObject()
-	vm.context.PushPointer(unsafe.Pointer(img))
-	vm.context.PutPropString(-2, "ptr")
-	imagesInJS[img] = struct{}{}
+	id := vm.newImageID()
+	vm.context.PushInt(id)
+	vm.context.PutPropString(-2, "id")
+	imagesInJS[id] = img
 	vm.context.PushGoFunction(wrapFunc(func(vm *VM) (int, error) {
-		delete(imagesInJS, img)
+		delete(imagesInJS, id)
 		return 0, nil
 	}, vm))
 	vm.context.SetFinalizer(-2)
+}
+
+func (vm *VM) getEbitenImage(index int) *ebiten.Image {
+	vm.context.GetPropString(0, "id")
+	id := vm.context.GetInt(-1)
+	vm.context.Pop()
+	return imagesInJS[id]
 }
 
 func jsNewEbitenImage(vm *VM) (int, error) {

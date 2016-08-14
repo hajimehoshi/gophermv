@@ -30,6 +30,7 @@ type VM struct {
 	scripts         []string
 	updatingFrameCh chan struct{}
 	updatedFrameCh  chan struct{}
+	lastImageID     int
 }
 
 func NewVM(pwd string) (*VM, error) {
@@ -194,13 +195,6 @@ func (vm *VM) Run() error {
 		return err
 	}
 	return nil
-}
-
-func (vm *VM) getEbitenImage(index int) *ebiten.Image {
-	vm.context.GetPropString(0, "ptr")
-	ptr := vm.context.GetPointer(-1)
-	vm.context.Pop()
-	return (*ebiten.Image)(ptr)
 }
 
 func (vm *VM) updateScreen(screen *ebiten.Image) error {
