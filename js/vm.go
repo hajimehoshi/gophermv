@@ -167,6 +167,15 @@ func (vm *VM) loop() error {
 	}
 }
 
+
+func detailedError(err error) error {
+	derr, ok := err.(*duktape.Error)
+	if !ok {
+		return err
+	}
+	return fmt.Errorf("%s", derr.Stack)
+}
+
 func (vm *VM) Run() error {
 	vmError := make(chan error)
 	gameStarted := make(chan struct{})
@@ -192,7 +201,7 @@ func (vm *VM) Run() error {
 	}
 	// TODO: Fix the title
 	if err := ebiten.Run(update, 816, 624, 1, "test"); err != nil {
-		return err
+		return detailedError(err)
 	}
 	return nil
 }
