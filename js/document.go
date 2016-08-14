@@ -505,7 +505,7 @@ function _gophermv_appendOnLoadCallback(f) {
 }
 
 function _gophermv_requestAnimationFrame(f) {
-  _gophermv_requirestAnimationFrameCallbacks.push(f);
+  _gophermv_requestAnimationFrameCallbacks.push(f);
 }
 `
 
