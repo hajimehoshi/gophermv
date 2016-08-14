@@ -79,6 +79,32 @@ func (vm *VM) Enqueue(filename string) {
 	vm.scripts = append(vm.scripts, filename)
 }
 
+func (vm *VM) intToError(result int) error {
+	if result == 0 {
+		return nil
+	}
+	err := &duktape.Error{}
+	for _, key := range []string{"name", "message", "fileName", "lineNumber", "stack"} {
+		vm.context.GetPropString(-1, key)
+		switch key {
+		case "name":
+			err.Type = vm.context.SafeToString(-1)
+		case "message":
+			err.Message = vm.context.SafeToString(-1)
+		case "fileName":
+			err.FileName = vm.context.SafeToString(-1)
+		case "lineNumber":
+			if vm.context.IsNumber(-1) {
+				err.LineNumber = vm.context.GetInt(-1)
+			}
+		case "stack":
+			err.Stack = vm.context.SafeToString(-1)
+		}
+		vm.context.Pop()
+	}
+	return err
+}
+
 func (vm *VM) loop() error {
 	for {
 		if 0 < len(vm.scripts) {
@@ -91,7 +117,9 @@ func (vm *VM) loop() error {
 		vm.context.GetGlobalString("_gophermv_onLoadCallbacks")
 		if n := vm.context.GetLength(-1); 0 < n {
 			vm.context.GetPropIndex(-1, 0)
-			vm.context.Call(0)
+			if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+				return err
+			}
 			vm.context.Pop()
 			vm.context.PushString("shift")
 			vm.context.CallProp(-2, 0)
@@ -109,17 +137,23 @@ func (vm *VM) loop() error {
 			vm.context.PushString("slice")
 			vm.context.PushInt(0)
 			vm.context.PushInt(n)
-			vm.context.CallProp(-4, 2)
+			if err := vm.intToError(vm.context.PcallProp(-4, 2)); err != nil {
+				return err
+			}
 			for i := 0; i < n; i++ {
 				vm.context.GetPropIndex(-1, uint(i))
-				vm.context.Call(0)
+				if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+					return err
+				}
 				vm.context.Pop()
 			}
 			vm.context.Pop()
 
 			vm.context.PushString("slice")
 			vm.context.PushInt(n)
-			vm.context.CallProp(-3, 1)
+			if err := vm.intToError(vm.context.PcallProp(-3, 1)); err != nil {
+				return err
+			}
 			vm.context.PushGlobalObject()
 			vm.context.Swap(-1, -2)
 			vm.context.PutPropString(-2, "_gophermv_requestAnimationFrameCallbacks")
@@ -174,7 +208,9 @@ func (vm *VM) updateScreen(screen *ebiten.Image) error {
 		image  *ebiten.Image
 		zIndex int
 	}
-	vm.context.EvalString("document.body._canvasEbitenImages()")
+	if err := vm.context.PevalString("document.body._canvasEbitenImages()"); err != nil {
+		return err
+	}
 	n := vm.context.GetLength(-1)
 	for i := 0; i < n; i++ {
 		vm.context.GetPropIndex(-1, uint(i))
@@ -201,10 +237,13 @@ func (vm *VM) exec(filename string) error {
 			return err
 		}
 	}
-	vm.context.PushString(src)
 	vm.context.PushString(filename)
-	vm.context.Compile(0)
-	vm.context.Call(-1)
+	if err := vm.context.PcompileStringFilename(0, src); err != nil {
+		return err
+	}
+	if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+		return err
+	}
 	if filepath.Clean(filename) == filepath.Join("js", "rpg_core.js") {
 		if err := vm.overrideCoreClasses(); err != nil {
 			return err

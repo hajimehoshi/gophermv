@@ -61,7 +61,9 @@ DataManager.loadDataFile = function(name, src) {
 `
 
 func (vm *VM) overrideManagerClasses() error {
-	vm.context.EvalString(managerClassesSrc)
+	if err := vm.context.PevalString(managerClassesSrc); err != nil {
+		return err
+	}
 	vm.context.Pop()
 	if _, err := vm.context.PushGlobalGoFunction("_gophermv_loadJSONFile", wrapFunc(jsLoadJSONFile, vm)); err != nil {
 		return err

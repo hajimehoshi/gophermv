@@ -71,7 +71,9 @@ Utils.canReadGameFiles = function() {
 `
 
 func (vm *VM) overrideCoreClasses() error {
-	vm.context.EvalString(coreClassesSrc)
+	if err := vm.context.PevalString(coreClassesSrc); err != nil {
+		return err
+	}
 	vm.context.Pop()
 	return nil
 }

@@ -500,12 +500,12 @@ LocalStorage.prototype.removeItem = function(key) {
 var _gophermv_onLoadCallbacks = [];
 var _gophermv_requestAnimationFrameCallbacks = [];
 
-funciton _gophermv_appendOnLoadCallback(f) {
-  _gophermv_onLoadCallbacks.push(f)
+function _gophermv_appendOnLoadCallback(f) {
+  _gophermv_onLoadCallbacks.push(f);
 }
 
 function _gophermv_requestAnimationFrame(f) {
-  _gophermv_requirestAnimationFrameCallbacks.push(f)
+  _gophermv_requirestAnimationFrameCallbacks.push(f);
 }
 `
 
@@ -514,7 +514,9 @@ func (vm *VM) initDocument() error {
 		return err
 	}
 	vm.context.Pop()
-	vm.context.EvalString(documentSrc)
+	if err := vm.context.PevalString(documentSrc); err != nil {
+		return err
+	}
 	vm.context.Pop()
 	return nil
 }
