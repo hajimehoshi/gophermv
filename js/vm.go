@@ -18,41 +18,32 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"text/template"
+	"runtime"
 
 	"github.com/hajimehoshi/ebiten"
-	"github.com/robertkrimen/otto"
+	"gopkg.in/olebedev/go-duktape.v2"
 )
 
 type VM struct {
-	pwd                            string
-	otto                           *otto.Otto
-	scripts                        []string
-	onLoadCallbacks                []otto.Value
-	requestAnimationFrameCallbacks []otto.Value
-	updatingFrameCh                chan struct{}
-	updatedFrameCh                 chan struct{}
-}
-
-func detailedError(err error) error {
-	switch err := err.(type) {
-	case *otto.Error:
-		return fmt.Errorf("vm: %s", err.String())
-	default:
-		return err
-	}
+	pwd             string
+	context         *duktape.Context
+	scripts         []string
+	updatingFrameCh chan struct{}
+	updatedFrameCh  chan struct{}
 }
 
 func NewVM(pwd string) (*VM, error) {
 	vm := &VM{
 		pwd:             pwd,
-		otto:            otto.New(),
+		context:         duktape.New(),
 		updatingFrameCh: make(chan struct{}),
 		updatedFrameCh:  make(chan struct{}),
 	}
 	if err := vm.init(); err != nil {
-		return nil, detailedError(err)
+		return nil, err
 	}
+	runtime.SetFinalizer(vm, (*VM).Destroy)
+	// TODO: Call GC?
 	return vm, nil
 }
 
@@ -64,6 +55,14 @@ func (vm *VM) init() error {
 		return err
 	}
 	return nil
+}
+
+func (vm *VM) Destroy() {
+	if vm.context == nil {
+		return
+	}
+	vm.context.Destroy()
+	vm.context = nil
 }
 
 var (
@@ -89,26 +88,47 @@ func (vm *VM) loop() error {
 			vm.scripts = vm.scripts[1:]
 			continue
 		}
-		if 0 < len(vm.onLoadCallbacks) {
-			callback := vm.onLoadCallbacks[0]
-			if _, err := callback.Call(otto.Value{}); err != nil {
-				return err
-			}
-			vm.onLoadCallbacks = vm.onLoadCallbacks[1:]
+		vm.context.GetGlobalString("_gophermv_onLoadCallbacks")
+		if n := vm.context.GetLength(-1); 0 < n {
+			vm.context.GetPropIndex(-1, 0)
+			vm.context.Call(0)
+			vm.context.Pop()
+			vm.context.PushString("shift")
+			vm.context.CallProp(-2, 0)
+			vm.context.Pop()
+
+			vm.context.Pop()
 			continue
 		}
-		current := make([]otto.Value, len(vm.requestAnimationFrameCallbacks))
-		copy(current, vm.requestAnimationFrameCallbacks)
-		if 0 < len(current) {
+		vm.context.Pop()
+
+		vm.context.GetGlobalString("_gophermv_requestAnimationFrameCallbacks")
+		if n := vm.context.GetLength(-1); 0 < n {
 			vm.updatingFrameCh <- struct{}{}
 			<-vm.updatedFrameCh
-			for _, callback := range current {
-				if _, err := callback.Call(otto.Value{}); err != nil {
-					return err
-				}
+			vm.context.PushString("slice")
+			vm.context.PushInt(0)
+			vm.context.PushInt(n)
+			vm.context.CallProp(-4, 2)
+			for i := 0; i < n; i++ {
+				vm.context.GetPropIndex(-1, uint(i))
+				vm.context.Call(0)
+				vm.context.Pop()
 			}
-			vm.requestAnimationFrameCallbacks = vm.requestAnimationFrameCallbacks[len(current):]
+			vm.context.Pop()
+
+			vm.context.PushString("slice")
+			vm.context.PushInt(n)
+			vm.context.CallProp(-3, 1)
+			vm.context.PushGlobalObject()
+			vm.context.Swap(-1, -2)
+			vm.context.PutPropString(-2, "_gophermv_requestAnimationFrameCallbacks")
+			vm.context.Pop()
+
+			vm.context.Pop()
+			continue
 		}
+		vm.context.Pop()
 	}
 }
 
@@ -137,9 +157,16 @@ func (vm *VM) Run() error {
 	}
 	// TODO: Fix the title
 	if err := ebiten.Run(update, 816, 624, 1, "test"); err != nil {
-		return detailedError(err)
+		return err
 	}
 	return nil
+}
+
+func (vm *VM) getEbitenImage(index int) *ebiten.Image {
+	vm.context.GetPropString(0, "ptr")
+	ptr := vm.context.GetPointer(-1)
+	vm.context.Pop()
+	return (*ebiten.Image)(ptr)
 }
 
 func (vm *VM) updateScreen(screen *ebiten.Image) error {
@@ -147,19 +174,17 @@ func (vm *VM) updateScreen(screen *ebiten.Image) error {
 		image  *ebiten.Image
 		zIndex int
 	}
-	oimgs, err := vm.otto.Run("document.body._canvasEbitenImages()")
-	if err != nil {
-		return err
-	}
-	imgs, err := oimgs.Export()
-	if err != nil {
-		return err
-	}
-	for _, img := range imgs.([]*ebiten.Image) {
+	vm.context.EvalString("document.body._canvasEbitenImages()")
+	n := vm.context.GetLength(-1)
+	for i := 0; i < n; i++ {
+		vm.context.GetPropIndex(-1, uint(i))
+		img := vm.getEbitenImage(-1)
 		if err := screen.DrawImage(img, &ebiten.DrawImageOptions{}); err != nil {
 			return err
 		}
+		vm.context.Pop()
 	}
+	vm.context.Pop()
 	return nil
 }
 
@@ -176,13 +201,10 @@ func (vm *VM) exec(filename string) error {
 			return err
 		}
 	}
-	bin, err := vm.otto.Compile(filename, src)
-	if err != nil {
-		return err
-	}
-	if _, err := vm.otto.Run(bin); err != nil {
-		return err
-	}
+	vm.context.PushString(src)
+	vm.context.PushString(filename)
+	vm.context.Compile(0)
+	vm.context.Call(-1)
 	if filepath.Clean(filename) == filepath.Join("js", "rpg_core.js") {
 		if err := vm.overrideCoreClasses(); err != nil {
 			return err
@@ -196,33 +218,15 @@ func (vm *VM) exec(filename string) error {
 	return nil
 }
 
-type Func func(vm *VM, call otto.FunctionCall) (interface{}, error)
+type Func func(vm *VM) (int, error)
 
-func (vm *VM) throw(err error) error {
-	jsErr, err := vm.otto.Run(fmt.Sprintf("new Error(\"%s\")", template.JSEscapeString(err.Error())))
-	if err != nil {
-		return err
-	}
-	// `panic` throws the error object in Otto.
-	panic(jsErr)
-}
-
-func wrapFunc(f Func, vm *VM) func(call otto.FunctionCall) otto.Value {
-	return func(call otto.FunctionCall) otto.Value {
-		v, err := f(vm, call)
+func wrapFunc(f Func, vm *VM) func(*duktape.Context) int {
+	return func(*duktape.Context) int {
+		r, err := f(vm)
 		if err != nil {
-			if err := vm.throw(err); err != nil {
-				panic(err)
-			}
-			return otto.Value{}
+			vm.context.PushErrorObject(duktape.ErrError, "%s", err.Error())
+			return -1
 		}
-		ov, err := vm.otto.ToValue(v)
-		if err != nil {
-			if err := vm.throw(err); err != nil {
-				panic(err)
-			}
-			return otto.Value{}
-		}
-		return ov
+		return r
 	}
 }

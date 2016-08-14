@@ -17,20 +17,16 @@ package js
 import (
 	"io/ioutil"
 	"path/filepath"
-
-	"github.com/robertkrimen/otto"
 )
 
-func jsLoadJSONFile(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	path, err := call.Argument(0).ToString()
-	if err != nil {
-		return "", err
-	}
+func jsLoadJSONFile(vm *VM) (int, error) {
+	path := vm.context.GetString(0)
 	content, err := ioutil.ReadFile(filepath.Join(vm.pwd, path))
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return string(content), nil
+	vm.context.PushString(string(content))
+	return 1, nil
 }
 
 const managerClassesSrc = `
@@ -65,12 +61,12 @@ DataManager.loadDataFile = function(name, src) {
 `
 
 func (vm *VM) overrideManagerClasses() error {
-	if _, err := vm.otto.Run(managerClassesSrc); err != nil {
+	vm.context.EvalString(managerClassesSrc)
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_loadJSONFile", wrapFunc(jsLoadJSONFile, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_loadJSONFile", wrapFunc(jsLoadJSONFile, vm)); err != nil {
-		return err
-	}
+	vm.context.Pop()
 	return nil
 }
 

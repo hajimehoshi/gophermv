@@ -14,27 +14,11 @@
 
 package js
 
-import (
-	"github.com/robertkrimen/otto"
-)
-
-func jsAppendOnLoadCallback(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	vm.onLoadCallbacks = append(vm.onLoadCallbacks, call.Argument(0));
-	return otto.Value{}, nil
-}
-
-func jsAppendScript(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	src, err := call.Argument(0).ToString()
-	if err != nil {
-		return otto.Value{}, err
-	}
+func jsAppendScript(vm *VM) (int, error) {
+	src := vm.context.GetString(0)
 	vm.Enqueue(src)
-	return otto.Value{}, nil
-}
-
-func jsRequestAnimationFrame(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	vm.requestAnimationFrameCallbacks = append(vm.requestAnimationFrameCallbacks, call.Argument(0))
-	return otto.Value{}, nil
+	vm.context.PushUndefined()
+	return 0, nil
 }
 
 const documentSrc = `
@@ -512,20 +496,25 @@ LocalStorage.prototype.removeItem = function(key) {
   global._document = new Document();
   global._localStorage = new LocalStorage();
 })(this);
+
+var _gophermv_onLoadCallbacks = [];
+var _gophermv_requestAnimationFrameCallbacks = [];
+
+funciton _gophermv_appendOnLoadCallback(f) {
+  _gophermv_onLoadCallbacks.push(f)
+}
+
+function _gophermv_requestAnimationFrame(f) {
+  _gophermv_requirestAnimationFrameCallbacks.push(f)
+}
 `
 
 func (vm *VM) initDocument() error {
-	if err := vm.otto.Set("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_appendOnLoadCallback", wrapFunc(jsAppendOnLoadCallback, vm)); err != nil {
-		return err
-	}
-	if err := vm.otto.Set("_gophermv_requestAnimationFrame", wrapFunc(jsRequestAnimationFrame, vm)); err != nil {
-		return err
-	}
-	if _, err := vm.otto.Run(documentSrc); err != nil {
-		return err
-	}
+	vm.context.Pop()
+	vm.context.EvalString(documentSrc)
+	vm.context.Pop()
 	return nil
 }

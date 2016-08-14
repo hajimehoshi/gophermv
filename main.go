@@ -71,6 +71,7 @@ func process(path string) error {
 	if err != nil {
 		return err
 	}
+	defer vm.Destroy()
 	for _, s := range scripts {
 		vm.Enqueue(s)
 	}

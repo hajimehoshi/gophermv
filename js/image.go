@@ -16,7 +16,6 @@ package js
 
 import (
 	"encoding/base64"
-	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -25,68 +24,77 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/hajimehoshi/ebiten"
-	"github.com/robertkrimen/otto"
 )
 
-func jsNewEbitenImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	width, err := call.Argument(0).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	height, err := call.Argument(1).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
+var (
+	imagesInJS = map[*ebiten.Image]struct{}{}
+)
+
+func (vm *VM) pushEbitenImage(img *ebiten.Image) {
+	vm.context.PushObject()
+	vm.context.PushPointer(unsafe.Pointer(img))
+	vm.context.PutPropString(-2, "ptr")
+	imagesInJS[img] = struct{}{}
+	vm.context.PushGoFunction(wrapFunc(func(vm *VM) (int, error) {
+		delete(imagesInJS, img)
+		return 0, nil
+	}, vm))
+	vm.context.SetFinalizer(-2)
+}
+
+func jsNewEbitenImage(vm *VM) (int, error) {
+	width := vm.context.GetInt(0)
+	height := vm.context.GetInt(1)
 	img, err := ebiten.NewImage(int(width), int(height), ebiten.FilterNearest)
 	if err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
-	return img, nil
+	vm.pushEbitenImage(img)
+	return 1, nil
 }
 
 var (
 	pngDataURLRe = regexp.MustCompile(`^data:image/png;base64,(.+)$`)
 )
 
-func jsLoadEbitenImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	src, err := call.Argument(0).ToString()
-	if err != nil {
-		return otto.Value{}, err
-	}
+func jsLoadEbitenImage(vm *VM) (int, error) {
+	src := vm.context.GetString(0)
 	var in io.Reader
 	if m := pngDataURLRe.FindStringSubmatch(src); m != nil {
 		in = base64.NewDecoder(base64.StdEncoding, strings.NewReader(m[1]))
 	} else {
 		f, err := os.Open(filepath.Join(vm.pwd, src))
 		if err != nil {
-			return otto.Value{}, err
+			return 0, err
 		}
 		defer f.Close()
 		in = f
 	}
 	img, _, err := image.Decode(in)
 	if err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
 	eimg, err := ebiten.NewImageFromImage(img, ebiten.FilterNearest)
 	if err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
-	return eimg, nil
+	vm.pushEbitenImage(eimg)
+	return 1, nil
 }
 
-func jsEbitenImageSize(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	oimg, err := call.Argument(0).Export()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	img := oimg.(*ebiten.Image)
+func jsEbitenImageSize(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
 	w, h := img.Size()
-	return []int{w, h}, nil
+	vm.context.PushArray()
+	vm.context.PushInt(w)
+	vm.context.PutPropIndex(-2, 0)
+	vm.context.PushInt(h)
+	vm.context.PutPropIndex(-2, 1)
+	return 1, nil
 }
 
 const (
@@ -108,43 +116,27 @@ func init() {
 	}
 }
 
-func jsEbitenImageClearRect(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	oimg, err := call.Argument(0).Export()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	img := oimg.(*ebiten.Image)
-	x, err := call.Argument(1).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	y, err := call.Argument(2).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	width, err := call.Argument(3).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	height, err := call.Argument(4).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
+func jsEbitenImageClearRect(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
+	x := vm.context.GetInt(1)
+	y := vm.context.GetInt(2)
+	width := vm.context.GetInt(3)
+	height := vm.context.GetInt(4)
 	w, h := img.Size()
 	if x == 0 && y == 0 && int(width) == w && int(height) == h {
 		if err := img.Clear(); err != nil {
-			return otto.Value{}, err
+			return 0, err
 		}
-		return otto.Value{}, nil
+		return 0, nil
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
 	op.CompositeMode = ebiten.CompositeModeClear
 	if err := img.DrawImage(emptyImage, op); err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
-	return otto.Value{}, nil
+	return 0, nil
 }
 
 type imagePart struct {
@@ -168,109 +160,28 @@ func (p imageParts) Dst(i int) (int, int, int, int) {
 	return part.dx0, part.dy0, part.dx1, part.dy1
 }
 
-func objectToInts(obj *otto.Object) ([]int, error) {
-	olen, err := obj.Get("length")
-	if err != nil {
-		return nil, err
-	}
-	len, err := olen.ToInteger()
-	if err != nil {
-		return nil, err
-	}
-	values := make([]int, int(len))
-	for i := 0; i < int(len); i++ {
-		obj, err := obj.Get(strconv.Itoa(i))
-		if err != nil {
-			return nil, err
+func (vm *VM) getEbitenDrawImageOptions(index int) (*ebiten.DrawImageOptions, error) {
+	vm.context.GetPropString(index, "imageParts")
+	n := vm.context.GetLength(-1)
+	parts := make([]*imagePart, n)
+	for i := 0; i < n; i++ {
+		vm.context.GetPropIndex(-1, uint(i))
+		src := make([]int, 4)
+		dst := make([]int, 4)
+		vm.context.GetPropString(-1, "src")
+		for j := 0; j < 4; j++ {
+			vm.context.GetPropIndex(-1, uint(j))
+			src[j] = vm.context.GetInt(-1)
+			vm.context.Pop()
 		}
-		val, err := obj.ToInteger()
-		if err != nil {
-			return nil, err
+		vm.context.Pop()
+		vm.context.GetPropString(-1, "dst")
+		for j := 0; j < 4; j++ {
+			vm.context.GetPropIndex(-1, uint(j))
+			dst[j] = vm.context.GetInt(-1)
+			vm.context.Pop()
 		}
-		values[i] = int(val)
-	}
-	return values, nil
-}
-
-func objectToFloats(obj *otto.Object) ([]float64, error) {
-	olen, err := obj.Get("length")
-	if err != nil {
-		return nil, err
-	}
-	len, err := olen.ToInteger()
-	if err != nil {
-		return nil, err
-	}
-	values := make([]float64, int(len))
-	for i := 0; i < int(len); i++ {
-		obj, err := obj.Get(strconv.Itoa(i))
-		if err != nil {
-			return nil, err
-		}
-		val, err := obj.ToFloat()
-		if err != nil {
-			return nil, err
-		}
-		values[i] = val
-	}
-	return values, nil
-}
-
-func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error) {
-	oparts, err := obj.Get("imageParts")
-	if err != nil {
-		return nil, err
-	}
-	ogeom, err := obj.Get("geom")
-	if err != nil {
-		return nil, err
-	}
-	geomVals, err := objectToFloats(ogeom.Object())
-	if err != nil {
-		return nil, err
-	}
-	oalpha, err := obj.Get("alpha")
-	if err != nil {
-		return nil, err
-	}
-	alpha, err := oalpha.ToFloat()
-	if err != nil {
-		return nil, err
-	}
-	op := &ebiten.DrawImageOptions{}
-	ol, err := oparts.Object().Get("length")
-	if err != nil {
-		return nil, err
-	}
-	l, err := ol.ToInteger()
-	if err != nil {
-		return nil, err
-	}
-	parts := make([]*imagePart, l)
-	for i := range parts {
-		op, err := oparts.Object().Get(strconv.Itoa(i))
-		if err != nil {
-			return nil, err
-		}
-		if op == (otto.Value{}) {
-			return nil, fmt.Errorf("js: invalid imageParts")
-		}
-		srcv, err := op.Object().Get("src")
-		if err != nil {
-			return nil, err
-		}
-		dstv, err := op.Object().Get("dst")
-		if err != nil {
-			return nil, err
-		}
-		src, err := objectToInts(srcv.Object())
-		if err != nil {
-			return nil, err
-		}
-		dst, err := objectToInts(dstv.Object())
-		if err != nil {
-			return nil, err
-		}
+		vm.context.Pop()
 		p := &imagePart{
 			sx0: src[0],
 			sy0: src[1],
@@ -282,7 +193,25 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 			dy1: dst[3],
 		}
 		parts[i] = p
+		vm.context.Pop()
 	}
+	vm.context.Pop()
+
+	vm.context.GetPropString(index, "geom")
+	n = vm.context.GetLength(-1)
+	geomVals := make([]float64, n)
+	for i := 0; i < n; i++ {
+		vm.context.GetPropIndex(-1, uint(i))
+		geomVals[i] = vm.context.GetNumber(-1)
+		vm.context.Pop()
+	}
+	vm.context.Pop()
+
+	vm.context.GetPropString(index, "alpha")
+	alpha := vm.context.GetNumber(-1)
+	vm.context.Pop()
+
+	op := &ebiten.DrawImageOptions{}
 	op.ImageParts = imageParts(parts)
 	op.GeoM.SetElement(0, 0, geomVals[0])
 	op.GeoM.SetElement(1, 0, geomVals[1])
@@ -295,32 +224,13 @@ func toEbitenDrawImageOptions(obj *otto.Object) (*ebiten.DrawImageOptions, error
 	return op, nil
 }
 
-func jsEbitenImageFillRect(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	oimg, err := call.Argument(0).Export()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	img := oimg.(*ebiten.Image)
-	x, err := call.Argument(1).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	y, err := call.Argument(2).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	width, err := call.Argument(3).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	height, err := call.Argument(4).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	clr, err := call.Argument(5).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
+func jsEbitenImageFillRect(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
+	x := vm.context.GetInt(1)
+	y := vm.context.GetInt(2)
+	width := vm.context.GetInt(3)
+	height := vm.context.GetInt(4)
+	clr := vm.context.GetInt(5)
 	r := float64((clr >> 24) & 0xff) / 0xff
 	g := float64((clr >> 16) & 0xff) / 0xff
 	b := float64((clr >> 8) & 0xff) / 0xff
@@ -331,54 +241,30 @@ func jsEbitenImageFillRect(vm *VM, call otto.FunctionCall) (interface{}, error) 
 	op.ColorM.Scale(r, g, b, a)
 	//op.CompositeMode = ebiten.CompositeModeSourceOver
 	if err := img.DrawImage(emptyImage, op); err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
-	return otto.Value{}, nil
+	return 0, nil
 }
 
-func jsEbitenImageDrawImage(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	odst, err := call.Argument(0).Export()
+func jsEbitenImageDrawImage(vm *VM) (int, error) {
+	dst := vm.getEbitenImage(0)
+	src := vm.getEbitenImage(1)
+	op, err := vm.getEbitenDrawImageOptions(2)
 	if err != nil {
-		return otto.Value{}, err
-	}
-	dst := odst.(*ebiten.Image)
-	osrc, err := call.Argument(1).Export()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	src := osrc.(*ebiten.Image)
-	op, err := toEbitenDrawImageOptions(call.Argument(2).Object())
-	if err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
 	if err := dst.DrawImage(src, op); err != nil {
-		return otto.Value{}, err
+		return 0, err
 	}
-	return otto.Value{}, nil
+	return 0, nil
 }
 
-func jsEbitenImagePixels(vm *VM, call otto.FunctionCall) (interface{}, error) {
-	oimg, err := call.Argument(0).Export()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	img := oimg.(*ebiten.Image)
-	x, err := call.Argument(1).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	y, err := call.Argument(2).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	width, err := call.Argument(3).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
-	height, err := call.Argument(4).ToInteger()
-	if err != nil {
-		return otto.Value{}, err
-	}
+func jsEbitenImagePixels(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
+	x := vm.context.GetInt(1)
+	y := vm.context.GetInt(2)
+	width := vm.context.GetInt(3)
+	height := vm.context.GetInt(4)
 	data := make([]uint8, width*height*4)
 	for j := int(y); j < int(y+height); j++ {
 		for i := int(x); i < int(x+width); i++ {
@@ -391,30 +277,43 @@ func jsEbitenImagePixels(vm *VM, call otto.FunctionCall) (interface{}, error) {
 			data[4*idx+3] = uint8(a >> 8)
 		}
 	}
-	return data, nil
+	vm.context.PushFixedBuffer(len(data))
+	//vm.context.PushBufferObject(-1, duktape.BufobjUint8array)
+	for i, v := range data {
+		vm.context.PushInt(int(v))
+		vm.context.PutPropIndex(-2, uint(i))
+	}
+	return 1, nil
 }
 
 func (vm *VM) initEbitenImage() error {
-	if err := vm.otto.Set("_gophermv_newEbitenImage", wrapFunc(jsNewEbitenImage, vm)); err != nil {
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_newEbitenImage", wrapFunc(jsNewEbitenImage, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_loadEbitenImage", wrapFunc(jsLoadEbitenImage, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_loadEbitenImage", wrapFunc(jsLoadEbitenImage, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_ebitenImageSize", wrapFunc(jsEbitenImageSize, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageSize", wrapFunc(jsEbitenImageSize, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_ebitenImageClearRect", wrapFunc(jsEbitenImageClearRect, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageClearRect", wrapFunc(jsEbitenImageClearRect, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_ebitenImageDrawImage", wrapFunc(jsEbitenImageDrawImage, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageDrawImage", wrapFunc(jsEbitenImageDrawImage, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_ebitenImageFillRect", wrapFunc(jsEbitenImageFillRect, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageFillRect", wrapFunc(jsEbitenImageFillRect, vm)); err != nil {
 		return err
 	}
-	if err := vm.otto.Set("_gophermv_ebitenImagePixels", wrapFunc(jsEbitenImagePixels, vm)); err != nil {
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImagePixels", wrapFunc(jsEbitenImagePixels, vm)); err != nil {
 		return err
 	}
+	vm.context.Pop()
 	return nil
 }
