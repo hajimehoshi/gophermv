@@ -53,7 +53,7 @@ func (vm *VM) pushEbitenImage(img *ebiten.Image) {
 }
 
 func (vm *VM) getEbitenImage(index int) *ebiten.Image {
-	vm.context.GetPropString(0, "id")
+	vm.context.GetPropString(index, "id")
 	id := vm.context.GetInt(-1)
 	vm.context.Pop()
 	return imagesInJS[id]
