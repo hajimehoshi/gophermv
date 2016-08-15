@@ -22,6 +22,7 @@ import (
 	"runtime"
 
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/ebitenutil"
 	"gopkg.in/olebedev/go-duktape.v2"
 )
 
@@ -185,7 +186,6 @@ func (vm *VM) Run() error {
 		vmError <- vm.loop()
 	}()
 	update := func(screen *ebiten.Image) error {
-		fmt.Printf("%0.2f\n", ebiten.CurrentFPS())
 		select {
 		case gameStarted <- struct{}{}:
 			close(gameStarted)
@@ -225,6 +225,10 @@ func (vm *VM) updateScreen(screen *ebiten.Image) error {
 		vm.context.Pop()
 	}
 	vm.context.Pop()
+	msg := fmt.Sprintf("%0.2f\n", ebiten.CurrentFPS())
+	if err := ebitenutil.DebugPrint(screen, msg); err != nil {
+		return err
+	}
 	return nil
 }
 
