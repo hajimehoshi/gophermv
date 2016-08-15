@@ -33,6 +33,7 @@ type VM struct {
 	updatingFrameCh chan struct{}
 	updatedFrameCh  chan struct{}
 	lastImageID     int
+	font            *Font
 }
 
 func NewVM(pwd string) (*VM, error) {
@@ -41,6 +42,11 @@ func NewVM(pwd string) (*VM, error) {
 		context:         duktape.New(),
 		updatingFrameCh: make(chan struct{}),
 		updatedFrameCh:  make(chan struct{}),
+	}
+	var err error
+	vm.font, err = newFont(pwd)
+	if err != nil {
+		return nil, err
 	}
 	if err := vm.init(); err != nil {
 		return nil, err

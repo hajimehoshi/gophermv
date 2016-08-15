@@ -252,8 +252,21 @@ func jsEbitenImageFillRect(vm *VM) (int, error) {
 	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
 	op.ColorM.Scale(r, g, b, a)
-	//op.CompositeMode = ebiten.CompositeModeSourceOver
 	if err := img.DrawImage(emptyImage, op); err != nil {
+		return 0, err
+	}
+	return 0, nil
+}
+
+func jsEbitenImageDrawText(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
+	text := vm.context.GetString(1)
+	tx := vm.context.GetInt(2)
+	ty := vm.context.GetInt(3)
+	maxWidth := vm.context.GetInt(4)
+	_ = maxWidth
+	const size = 24
+	if err := vm.font.drawText(img, text, size, tx, ty); err != nil {
 		return 0, err
 	}
 	return 0, nil
@@ -321,6 +334,10 @@ func (vm *VM) initEbitenImage() error {
 	}
 	vm.context.Pop()
 	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageFillRect", wrapFunc(jsEbitenImageFillRect, vm)); err != nil {
+		return err
+	}
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageDrawText", wrapFunc(jsEbitenImageDrawText, vm)); err != nil {
 		return err
 	}
 	vm.context.Pop()
