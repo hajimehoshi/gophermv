@@ -56,6 +56,7 @@ func NewVM(pwd string) (*VM, error) {
 }
 
 func (vm *VM) init() error {
+	vm.context.PevalString(`var console = {log:print,warn:print,error:print,info:print}`)
 	if err := vm.initWeb(); err != nil {
 		return err
 	}
