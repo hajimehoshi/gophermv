@@ -50,7 +50,7 @@ func NewVM(pwd string) (*VM, error) {
 }
 
 func (vm *VM) init() error {
-	if err := vm.initDocument(); err != nil {
+	if err := vm.initWeb(); err != nil {
 		return err
 	}
 	if err := vm.initEbitenImage(); err != nil {

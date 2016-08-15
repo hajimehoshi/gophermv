@@ -21,7 +21,7 @@ func jsAppendScript(vm *VM) (int, error) {
 	return 0, nil
 }
 
-const documentSrc = `
+const webSrc = `
 function Window() {
 }
 
@@ -509,12 +509,12 @@ function _gophermv_requestAnimationFrame(f) {
 }
 `
 
-func (vm *VM) initDocument() error {
+func (vm *VM) initWeb() error {
 	if _, err := vm.context.PushGlobalGoFunction("_gophermv_appendScript", wrapFunc(jsAppendScript, vm)); err != nil {
 		return err
 	}
 	vm.context.Pop()
-	if err := vm.context.PevalString(documentSrc); err != nil {
+	if err := vm.context.PevalString(webSrc); err != nil {
 		return err
 	}
 	vm.context.Pop()
