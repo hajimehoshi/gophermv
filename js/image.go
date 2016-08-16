@@ -223,6 +223,41 @@ func (vm *VM) getEbitenDrawImageOptions(index int) (*ebiten.DrawImageOptions, er
 	}
 	vm.context.Pop()
 
+	vm.context.GetPropString(index, "compositeMode")
+	compositeModeStr := vm.context.GetString(-1)
+	compositeMode := ebiten.CompositeModeSourceOver
+	switch compositeModeStr {
+	case "source-atop":
+		compositeMode = ebiten.CompositeModeSourceAtop
+	case "source-in":
+		compositeMode = ebiten.CompositeModeSourceIn
+	case "source-out":
+		compositeMode = ebiten.CompositeModeSourceOut
+	case "source-over":
+		compositeMode = ebiten.CompositeModeSourceOver
+	case "destination-atop":
+		compositeMode = ebiten.CompositeModeDestinationAtop
+	case "destination-in":
+		compositeMode = ebiten.CompositeModeDestinationIn
+	case "destination-out":
+		compositeMode = ebiten.CompositeModeDestinationOut
+	case "destination-over":
+		compositeMode = ebiten.CompositeModeDestinationOver
+	case "lighter":
+		compositeMode = ebiten.CompositeModeLighter
+	case "clear":
+		compositeMode = ebiten.CompositeModeClear
+	case "copy":
+		compositeMode = ebiten.CompositeModeCopy
+	case "xor":
+		compositeMode = ebiten.CompositeModeXor
+	case "multiply":
+		fmt.Fprintf(os.Stderr, "multiply is not supported yet!\n")
+	default:
+		return nil, fmt.Errorf("not supported composite mode: %s", compositeModeStr)
+	}
+	vm.context.Pop()
+
 	vm.context.GetPropString(index, "alpha")
 	alpha := vm.context.GetNumber(-1)
 	vm.context.Pop()
@@ -236,7 +271,7 @@ func (vm *VM) getEbitenDrawImageOptions(index int) (*ebiten.DrawImageOptions, er
 	op.GeoM.SetElement(0, 2, geomVals[4])
 	op.GeoM.SetElement(1, 2, geomVals[5])
 	op.ColorM.Scale(1, 1, 1, alpha)
-	// TODO: Use composite mode
+	op.CompositeMode = compositeMode
 	return op, nil
 }
 

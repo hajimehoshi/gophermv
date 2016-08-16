@@ -402,12 +402,12 @@ CanvasRenderingContext2D.prototype.drawImage = function(image) {
   var dst = this._canvas._ebitenImage;
   // TODO: What if |image| is a Canvas?
   var src = image._ebitenImage;
-  // TODO: Use composition mode
   var state = this._stateStack[this._stateStack.length - 1];
   var op = {
-    geom:       (state['transform'] || [1, 0, 0, 1, 0, 0]),
-    imageParts: imageParts,
-    alpha:      this.globalAlpha,
+    geom:          (state['transform'] || [1, 0, 0, 1, 0, 0]),
+    imageParts:    imageParts,
+    compositeMode: this.globalCompositeOperation,
+    alpha:         this.globalAlpha,
   };
   _gophermv_ebitenImageDrawImage(dst, src, op);
 };
