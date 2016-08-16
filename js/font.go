@@ -19,7 +19,6 @@ import (
 	"image/draw"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 
 	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
@@ -47,7 +46,7 @@ func newFont(path string) (*Font, error) {
 	}, nil
 }
 
-func (f *Font) drawText(img *ebiten.Image, text string, size int, x, y int) error {
+func (f *Font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int) error {
 	const dpi = 72
 	const width = 800
 	const height = 600
@@ -64,15 +63,11 @@ func (f *Font) drawText(img *ebiten.Image, text string, size int, x, y int) erro
 			Hinting: font.HintingFull,
 		}),
 	}
-	by := size
-	for _, line := range strings.Split(text, "\n") {
-		d.Dot = fixed.P(0, by)
-		d.DrawString(line)
-		by += size
-	}
+	d.Dot = fixed.P(x, y)
+	d.DrawString(text)
 	if f.textImg == nil {
 		var err error
-		f.textImg, err = ebiten.NewImage(width, height, ebiten.FilterNearest)
+		f.textImg, err = ebiten.NewImage(width, height, ebiten.FilterLinear)
 		if err != nil {
 			return err
 		}
@@ -80,9 +75,7 @@ func (f *Font) drawText(img *ebiten.Image, text string, size int, x, y int) erro
 	if err := f.textImg.ReplacePixels(f.dst.Pix); err != nil {
 		return err
 	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	if err := img.DrawImage(f.textImg, op); err != nil {
+	if err := img.DrawImage(f.textImg, &ebiten.DrawImageOptions{}); err != nil {
 		return err
 	}
 	return nil

@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten"
@@ -262,12 +263,25 @@ func jsEbitenImageFillRect(vm *VM) (int, error) {
 func jsEbitenImageDrawText(vm *VM) (int, error) {
 	img := vm.getEbitenImage(0)
 	text := vm.context.GetString(1)
-	tx := vm.context.GetInt(2)
-	ty := vm.context.GetInt(3)
+	x := vm.context.GetInt(2)
+	y := vm.context.GetInt(3)
 	maxWidth := vm.context.GetInt(4)
-	_ = maxWidth
-	const size = 24
-	if err := vm.font.drawText(img, text, size, tx, ty); err != nil {
+	font := vm.context.GetString(5)
+	size := 0
+	r := regexp.MustCompile(`^(\d+)px$`)
+	for _, t := range strings.Split(font, " ") {
+		m := r.FindStringSubmatch(t)
+		if m == nil {
+			continue
+		}
+		var err error
+		size, err = strconv.Atoi(m[1])
+		if err != nil {
+			return 0, err
+		}
+		break
+	}
+	if err := vm.font.drawText(img, text, size, x, y, maxWidth); err != nil {
 		return 0, err
 	}
 	return 0, nil

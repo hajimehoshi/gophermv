@@ -307,8 +307,8 @@ CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth)
 
 CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
   // Used at Bitmap.prototype._drawTextBody
-  // TODO: Implement this?
-  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth);
+  // console.log(this.textAlign, this.textBaseline);
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font);
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {
