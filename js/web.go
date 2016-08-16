@@ -310,7 +310,7 @@ CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
   if (this.textBaseline !== 'alphabetic') {
     throw new Error('not supported textBaseLine: ' + this.textBaseline);
   }
-  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign);
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._fillStyleColorInt());
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {
@@ -412,13 +412,7 @@ CanvasRenderingContext2D.prototype.drawImage = function(image) {
   _gophermv_ebitenImageDrawImage(dst, src, op);
 };
 
-CanvasRenderingContext2D.prototype.fillRect = function(x, y, width, height) {
-  if (!this._canvas._ebitenImage) {
-    throw new Error('clearRect: canvas is not initialized');
-  }
-  var dst = this._canvas._ebitenImage;
-  var color = 0;
-  var m = null;
+CanvasRenderingContext2D.prototype._fillStyleColorInt = function() {
   var alpha = 0xff;
   if (m = this.fillStyle.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)) {
     color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8);
@@ -440,7 +434,17 @@ CanvasRenderingContext2D.prototype.fillRect = function(x, y, width, height) {
   }
   alpha = (alpha * this.globalAlpha)|0;
   color |= alpha;
-  _gophermv_ebitenImageFillRect(dst, x, y, width, height, color);
+  return color;
+}
+
+CanvasRenderingContext2D.prototype.fillRect = function(x, y, width, height) {
+  if (!this._canvas._ebitenImage) {
+    throw new Error('clearRect: canvas is not initialized');
+  }
+  var dst = this._canvas._ebitenImage;
+  var color = 0;
+  var m = null;
+  _gophermv_ebitenImageFillRect(dst, x, y, width, height, this._fillStyleColorInt());
 };
 
 CanvasRenderingContext2D.prototype.getImageData = function(x, y, width, height) {

@@ -16,6 +16,7 @@ package js
 
 import (
 	"image"
+	"image/color"
 	"image/draw"
 	"io/ioutil"
 	"path/filepath"
@@ -54,7 +55,7 @@ const (
 	alignRight
 )
 
-func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int, align align) error {
+func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int, align align, clr color.Color) error {
 	const dpi = 72
 	const imgWidth = 800
 	const imgHeight = 600
@@ -70,7 +71,7 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 	width := gofont.MeasureString(face, text).Ceil()
 	d := &gofont.Drawer{
 		Dst:  f.dst,
-		Src:  image.White, // TODO: Change this
+		Src:  image.NewUniform(clr),
 		Face: face,
 	}
 	switch align {

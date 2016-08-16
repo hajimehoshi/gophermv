@@ -275,6 +275,14 @@ func (vm *VM) getEbitenDrawImageOptions(index int) (*ebiten.DrawImageOptions, er
 	return op, nil
 }
 
+func intColorToNRGBA(clr int) (r, g, b, a uint8) {
+	r = uint8(clr >> 24)
+	g = uint8(clr >> 16)
+	b = uint8(clr >> 8)
+	a = uint8(clr)
+	return
+}
+
 func jsEbitenImageFillRect(vm *VM) (int, error) {
 	img := vm.getEbitenImage(0)
 	x := vm.context.GetInt(1)
@@ -282,14 +290,15 @@ func jsEbitenImageFillRect(vm *VM) (int, error) {
 	width := vm.context.GetInt(3)
 	height := vm.context.GetInt(4)
 	clr := vm.context.GetInt(5)
-	r := float64((clr >> 24) & 0xff) / 0xff
-	g := float64((clr >> 16) & 0xff) / 0xff
-	b := float64((clr >> 8) & 0xff) / 0xff
-	a := float64((clr) & 0xff) / 0xff
+	r, g, b, a := intColorToNRGBA(clr)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(width)/emptyImageSize, float64(height)/emptyImageSize)
 	op.GeoM.Translate(float64(x), float64(y))
-	op.ColorM.Scale(r, g, b, a)
+	rf := float64(r) / 0xff
+	gf := float64(g) / 0xff
+	bf := float64(b) / 0xff
+	af := float64(a) / 0xff
+	op.ColorM.Scale(rf, gf, bf, af)
 	if err := img.DrawImage(emptyImage, op); err != nil {
 		return 0, err
 	}
@@ -304,10 +313,12 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 	maxWidth := vm.context.GetInt(4)
 	font := vm.context.GetString(5)
 	alignStr := vm.context.GetString(6)
+	clr := vm.context.GetInt(7)
+	r, g, b, a := intColorToNRGBA(clr)
 	size := 0
-	r := regexp.MustCompile(`^(\d+)px$`)
+	re := regexp.MustCompile(`^(\d+)px$`)
 	for _, t := range strings.Split(font, " ") {
-		m := r.FindStringSubmatch(t)
+		m := re.FindStringSubmatch(t)
 		if m == nil {
 			continue
 		}
@@ -330,7 +341,7 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 		return 0, fmt.Errorf("not supported align: %s", alignStr)
 	}
 	// TODO: Composition mode?
-	if err := vm.font.drawText(img, text, size, x, y, maxWidth, align); err != nil {
+	if err := vm.font.drawText(img, text, size, x, y, maxWidth, align, color.NRGBA{r, g, b, a}); err != nil {
 		return 0, err
 	}
 	return 0, nil
