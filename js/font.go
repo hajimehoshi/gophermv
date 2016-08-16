@@ -22,17 +22,17 @@ import (
 
 	"github.com/golang/freetype/truetype"
 	"github.com/hajimehoshi/ebiten"
-	"golang.org/x/image/font"
+	gofont "golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
 
-type Font struct {
+type font struct {
 	tt      *truetype.Font
 	dst     *image.RGBA
 	textImg *ebiten.Image
 }
 
-func newFont(path string) (*Font, error) {
+func newFont(path string) (*font, error) {
 	b, err := ioutil.ReadFile(filepath.Join(path, "fonts", "mplus-1m-regular.ttf"))
 	if err != nil {
 		return nil, err
@@ -41,33 +41,49 @@ func newFont(path string) (*Font, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Font{
+	return &font{
 		tt: tt,
 	}, nil
 }
 
-func (f *Font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int) error {
+type align int
+
+const (
+	alignLeft align = iota
+	alignCenter
+	alignRight
+)
+
+func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int, align align) error {
 	const dpi = 72
-	const width = 800
-	const height = 600
+	const imgWidth = 800
+	const imgHeight = 600
 	if f.dst == nil {
-		f.dst = image.NewRGBA(image.Rect(0, 0, width, height))
+		f.dst = image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 	}
 	draw.Draw(f.dst, f.dst.Bounds(), image.Transparent, image.ZP, draw.Src)
-	d := &font.Drawer{
-		Dst: f.dst,
-		Src: image.White, // TODO: Change this
-		Face: truetype.NewFace(f.tt, &truetype.Options{
-			Size:    float64(size),
-			DPI:     dpi,
-			Hinting: font.HintingFull,
-		}),
+	face := truetype.NewFace(f.tt, &truetype.Options{
+		Size:    float64(size),
+		DPI:     dpi,
+		Hinting: gofont.HintingFull,
+	})
+	width := gofont.MeasureString(face, text).Ceil()
+	d := &gofont.Drawer{
+		Dst:  f.dst,
+		Src:  image.White, // TODO: Change this
+		Face: face,
+	}
+	switch align {
+	case alignCenter:
+		x -= width / 2
+	case alignRight:
+		x -= width
 	}
 	d.Dot = fixed.P(x, y)
 	d.DrawString(text)
 	if f.textImg == nil {
 		var err error
-		f.textImg, err = ebiten.NewImage(width, height, ebiten.FilterLinear)
+		f.textImg, err = ebiten.NewImage(imgWidth, imgHeight, ebiten.FilterLinear)
 		if err != nil {
 			return err
 		}

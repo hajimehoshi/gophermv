@@ -16,6 +16,7 @@ package js
 
 import (
 	"encoding/base64"
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -267,6 +268,7 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 	y := vm.context.GetInt(3)
 	maxWidth := vm.context.GetInt(4)
 	font := vm.context.GetString(5)
+	alignStr := vm.context.GetString(6)
 	size := 0
 	r := regexp.MustCompile(`^(\d+)px$`)
 	for _, t := range strings.Split(font, " ") {
@@ -281,7 +283,19 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 		}
 		break
 	}
-	if err := vm.font.drawText(img, text, size, x, y, maxWidth); err != nil {
+	align := alignLeft
+	switch alignStr {
+	case "left":
+		align = alignLeft
+	case "center":
+		align = alignCenter
+	case "right":
+		align = alignRight
+	default:
+		return 0, fmt.Errorf("not supported align: %s", alignStr)
+	}
+	// TODO: Composition mode?
+	if err := vm.font.drawText(img, text, size, x, y, maxWidth, align); err != nil {
 		return 0, err
 	}
 	return 0, nil

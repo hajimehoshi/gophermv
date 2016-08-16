@@ -307,8 +307,10 @@ CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth)
 
 CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
   // Used at Bitmap.prototype._drawTextBody
-  // console.log(this.textAlign, this.textBaseline);
-  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font);
+  if (this.textBaseline !== 'alphabetic') {
+    throw new Error('not supported textBaseLine: ' + this.textBaseline);
+  }
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign);
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {

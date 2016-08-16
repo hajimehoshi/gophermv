@@ -33,7 +33,7 @@ type VM struct {
 	updatingFrameCh chan struct{}
 	updatedFrameCh  chan struct{}
 	lastImageID     int
-	font            *Font
+	font            *font
 }
 
 func NewVM(pwd string) (*VM, error) {
