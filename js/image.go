@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/hajimehoshi/ebiten"
+	"gopkg.in/olebedev/go-duktape.v2"
 )
 
 var (
@@ -304,11 +305,13 @@ func jsEbitenImagePixels(vm *VM) (int, error) {
 		}
 	}
 	vm.context.PushFixedBuffer(len(data))
-	//vm.context.PushBufferObject(-1, duktape.BufobjUint8array)
 	for i, v := range data {
 		vm.context.PushInt(int(v))
 		vm.context.PutPropIndex(-2, uint(i))
 	}
+	vm.context.PushBufferObject(-1, 0, len(data), duktape.BufobjUint8array)
+	vm.context.Swap(-1, -2)
+	vm.context.Pop()
 	return 1, nil
 }
 
