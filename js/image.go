@@ -252,7 +252,7 @@ func (vm *VM) getEbitenDrawImageOptions(index int) (*ebiten.DrawImageOptions, er
 	case "xor":
 		compositeMode = ebiten.CompositeModeXor
 	case "multiply":
-		fmt.Fprintf(os.Stderr, "multiply is not supported yet!\n")
+		fmt.Fprintf(os.Stderr, "composite mode 'multiply' is not supported yet.\n")
 	default:
 		return nil, fmt.Errorf("not supported composite mode: %s", compositeModeStr)
 	}
@@ -328,6 +328,9 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 			return 0, err
 		}
 		break
+	}
+	if size == 0 {
+		return 0, fmt.Errorf("invalid font: %s", font)
 	}
 	align := alignLeft
 	switch alignStr {

@@ -28,9 +28,9 @@ import (
 )
 
 type font struct {
-	tt      *truetype.Font
-	dst     *image.RGBA
-	textImg *ebiten.Image
+	tt       *truetype.Font
+	textImg  *image.RGBA
+	textEImg *ebiten.Image
 }
 
 func newFont(path string) (*font, error) {
@@ -59,10 +59,10 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 	const dpi = 72
 	const imgWidth = 800
 	const imgHeight = 600
-	if f.dst == nil {
-		f.dst = image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
+	if f.textImg == nil {
+		f.textImg = image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 	}
-	draw.Draw(f.dst, f.dst.Bounds(), image.Transparent, image.ZP, draw.Src)
+	draw.Draw(f.textImg, f.textImg.Bounds(), image.Transparent, image.ZP, draw.Src)
 	face := truetype.NewFace(f.tt, &truetype.Options{
 		Size:    float64(size),
 		DPI:     dpi,
@@ -70,7 +70,7 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 	})
 	width := gofont.MeasureString(face, text).Ceil()
 	d := &gofont.Drawer{
-		Dst:  f.dst,
+		Dst:  f.textImg,
 		Src:  image.NewUniform(clr),
 		Face: face,
 	}
@@ -82,17 +82,18 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 	}
 	d.Dot = fixed.P(x, y)
 	d.DrawString(text)
-	if f.textImg == nil {
+	if f.textEImg == nil {
 		var err error
-		f.textImg, err = ebiten.NewImage(imgWidth, imgHeight, ebiten.FilterLinear)
+		f.textEImg, err = ebiten.NewImage(imgWidth, imgHeight, ebiten.FilterLinear)
 		if err != nil {
 			return err
 		}
 	}
-	if err := f.textImg.ReplacePixels(f.dst.Pix); err != nil {
+	if err := f.textEImg.ReplacePixels(f.textImg.Pix); err != nil {
 		return err
 	}
-	if err := img.DrawImage(f.textImg, &ebiten.DrawImageOptions{}); err != nil {
+	op := &ebiten.DrawImageOptions{}
+	if err := img.DrawImage(f.textEImg, op); err != nil {
 		return err
 	}
 	return nil
