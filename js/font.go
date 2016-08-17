@@ -55,7 +55,7 @@ const (
 	alignRight
 )
 
-func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxWidth int, align align, clr color.Color) error {
+func (f *font) drawText(img *ebiten.Image, text string, size, lineWidth int, x, y int, maxWidth int, align align, clr color.Color) error {
 	const dpi = 72
 	const imgWidth = 800
 	const imgHeight = 600
@@ -68,6 +68,14 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 		DPI:     dpi,
 		Hinting: gofont.HintingFull,
 	})
+	outFace := face
+	if 0 < lineWidth {
+		outFace = truetype.NewFace(f.tt, &truetype.Options{
+			Size:    float64(size) + float64(lineWidth),
+			DPI:     dpi,
+			Hinting: gofont.HintingFull,
+		})
+	}
 	width := gofont.MeasureString(face, text).Ceil()
 	d := &gofont.Drawer{
 		Dst:  f.textImg,
@@ -80,8 +88,28 @@ func (f *font) drawText(img *ebiten.Image, text string, size int, x, y int, maxW
 	case alignRight:
 		x -= width
 	}
+	x -= lineWidth / 2
+	y += lineWidth / 2
 	d.Dot = fixed.P(x, y)
-	d.DrawString(text)
+	{
+		prevC := rune(-1)
+		for _, c := range text {
+			if prevC >= 0 {
+				d.Dot.X += face.Kern(prevC, c)
+			}
+			dr, mask, maskp, _, ok := outFace.Glyph(d.Dot, c)
+			if !ok {
+				continue
+			}
+			_, _, _, advance, _ := face.Glyph(d.Dot, c)
+			if !ok {
+				continue
+			}
+			draw.DrawMask(d.Dst, dr, d.Src, image.Point{}, mask, maskp, draw.Over)
+			d.Dot.X += advance
+			prevC = c
+		}
+	}
 	if f.textEImg == nil {
 		var err error
 		f.textEImg, err = ebiten.NewImage(imgWidth, imgHeight, ebiten.FilterLinear)

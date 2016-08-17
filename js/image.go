@@ -314,6 +314,7 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 	font := vm.context.GetString(5)
 	alignStr := vm.context.GetString(6)
 	clr := vm.context.GetInt(7)
+	lineWidth := vm.context.GetInt(8)
 	r, g, b, a := intColorToNRGBA(clr)
 	size := 0
 	re := regexp.MustCompile(`^(\d+)px$`)
@@ -344,7 +345,7 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 		return 0, fmt.Errorf("not supported align: %s", alignStr)
 	}
 	// TODO: Composition mode?
-	if err := vm.font.drawText(img, text, size, x, y, maxWidth, align, color.NRGBA{r, g, b, a}); err != nil {
+	if err := vm.font.drawText(img, text, size, lineWidth, x, y, maxWidth, align, color.NRGBA{r, g, b, a}); err != nil {
 		return 0, err
 	}
 	return 0, nil

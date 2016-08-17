@@ -301,16 +301,14 @@ CanvasRenderingContext2D.prototype.setTransform = function(a, b, c, d, tx, ty) {
 };
 
 CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth) {
-  // Used at Bitmap.prototype._drawTextOutline
-  // TODO: Implement this?
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.strokeStyle), this.lineWidth);
 };
 
 CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
-  // Used at Bitmap.prototype._drawTextBody
   if (this.textBaseline !== 'alphabetic') {
     throw new Error('not supported textBaseLine: ' + this.textBaseline);
   }
-  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._fillStyleColorInt());
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.fillStyle));
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {
@@ -412,25 +410,27 @@ CanvasRenderingContext2D.prototype.drawImage = function(image) {
   _gophermv_ebitenImageDrawImage(dst, src, op);
 };
 
-CanvasRenderingContext2D.prototype._fillStyleColorInt = function() {
+CanvasRenderingContext2D.prototype._colorStrToInt = function(str) {
   var alpha = 0xff;
-  if (m = this.fillStyle.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)) {
+  if (m = str.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)) {
     color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8);
-  } else if (m = this.fillStyle.match(/^rgba\((\d+),\s*(\d+),\s*(\d+)\s*([\d.]+)\)$/)) {
+  } else if (m = str.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/)) {
     alpha = (parseFloat(m[4]) * 255) | 0;
     color = (m[1] << 24) | (m[2] << 16) | (m[3] << 8);
-  } else if (m = this.fillStyle.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/)) {
+  } else if (m = str.match(/^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/)) {
     var r = parseInt(m[1], 16) * 0x11;
     var g = parseInt(m[2], 16) * 0x11;
     var b = parseInt(m[3], 16) * 0x11;
     color = (r << 24) | (g << 16) | (b << 8);
-  } else if (m = this.fillStyle.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/)) {
+  } else if (m = str.match(/^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/)) {
     var r = parseInt(m[1], 16);
     var g = parseInt(m[2], 16);
     var b = parseInt(m[3], 16);
     color = (r << 24) | (g << 16) | (b << 8);
+  } else if (str === 'black') {
+    color = 0xff;
   } else {
-    throw new Error('invalid style format: ' + this.fillStyle);
+    throw new Error('invalid style format: ' + str);
   }
   alpha = (alpha * this.globalAlpha)|0;
   color |= alpha;
@@ -444,7 +444,7 @@ CanvasRenderingContext2D.prototype.fillRect = function(x, y, width, height) {
   var dst = this._canvas._ebitenImage;
   var color = 0;
   var m = null;
-  _gophermv_ebitenImageFillRect(dst, x, y, width, height, this._fillStyleColorInt());
+  _gophermv_ebitenImageFillRect(dst, x, y, width, height, this._colorStrToInt(this.fillStyle));
 };
 
 CanvasRenderingContext2D.prototype.getImageData = function(x, y, width, height) {
