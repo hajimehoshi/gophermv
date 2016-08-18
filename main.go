@@ -15,11 +15,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"text/template"
 
 	"github.com/hajimehoshi/gophermv/js"
 	"golang.org/x/net/html"
@@ -31,14 +34,8 @@ const (
 )
 
 func process(path string) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
-	}
-	f, err := os.Open(filepath.Join(path, indexHTMLFile))
+	dir := filepath.Dir(path)
+	f, err := os.Open(filepath.Join(dir, indexHTMLFile))
 	if err != nil {
 		return err
 	}
@@ -67,7 +64,7 @@ func process(path string) error {
 			scripts = append(scripts, a.Val)
 		}
 	}
-	vm, err := js.NewVM(path)
+	vm, err := js.NewVM(dir)
 	if err != nil {
 		return err
 	}
@@ -85,8 +82,33 @@ var (
 	cpuProfile = flag.String("cpuprofile", "", "write cpu profile to file")
 )
 
+var usageTmpl = template.Must(template.New("usage").Parse(
+	`gophermv is a RPG Maker MV player in Go.
+
+Usage:
+
+	gophermv [path/to/{{.RPGProjectFile}}]
+`))
+
+func printUsage(w io.Writer) {
+	buf := bufio.NewWriter(w)
+	if err := usageTmpl.Execute(buf, struct {
+		RPGProjectFile string
+	}{
+		RPGProjectFile: rpgprojectFile,
+	}); err != nil {
+		panic(err)
+	}
+	buf.Flush()
+}
+
 func main() {
+	flag.Usage = func() {
+		printUsage(os.Stderr)
+		os.Exit(2)
+	}
 	flag.Parse()
+
 	if *cpuProfile != "" {
 		f, err := os.Create(*cpuProfile)
 		if err != nil {
@@ -102,7 +124,7 @@ func main() {
 
 	arg := flag.Arg(0)
 	if arg == "" {
-		return
+		flag.Usage()
 	}
 	if err := process(arg); err != nil {
 		fmt.Fprintln(os.Stderr, err)
