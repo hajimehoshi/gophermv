@@ -245,13 +245,6 @@ func (vm *VM) exec(filename string) error {
 		return err
 	}
 	src := string(srcb)
-	if filepath.Clean(filename) == filepath.Join("js", "libs", "pixi.js") {
-		var err error
-		src, err = vm.overridePixi(src)
-		if err != nil {
-			return err
-		}
-	}
 	vm.context.PushString(filename)
 	if err := vm.context.PcompileStringFilename(0, src); err != nil {
 		return err
