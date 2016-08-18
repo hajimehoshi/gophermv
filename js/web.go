@@ -301,6 +301,10 @@ CanvasRenderingContext2D.prototype.setTransform = function(a, b, c, d, tx, ty) {
 };
 
 CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth) {
+  // Note that this doesn't draw only strokes.
+  if (this.lineJoin !== 'round') {
+    throw new Error('not supported lineJoin: ' + this.lineJoin);
+  }
   _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.strokeStyle), this.lineWidth);
 };
 
@@ -308,7 +312,7 @@ CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
   if (this.textBaseline !== 'alphabetic') {
     throw new Error('not supported textBaseLine: ' + this.textBaseline);
   }
-  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.fillStyle));
+  _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.fillStyle), 0);
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {
