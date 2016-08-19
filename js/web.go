@@ -101,8 +101,17 @@ Document.prototype.createElement = function(name) {
   throw new Error('createElement: not supported element: ' + name);
 };
 
-Document.prototype.addEventListener = function() {
-  // TODO: Implement this
+Document.prototype.addEventListener = function(type, func) {
+  switch (type) {
+  case 'mousemove':
+    break;
+  case 'keydown':
+    break;
+  case 'keyup':
+    break;
+  default:
+    throw new Error('addEventListener: not supported type: ' + type);
+  }
 };
 
 function HTMLElement() {
@@ -515,8 +524,26 @@ function _gophermv_appendOnLoadCallback(f) {
   _gophermv_onLoadCallbacks.push(f);
 }
 
+function _gophermv_processOnLoadCallbacks() {
+  var n = _gophermv_onLoadCallbacks.length;
+  if (n === 0) {
+    return false;
+  }
+  _gophermv_onLoadCallbacks.shift()();
+  return true;
+}
+
 function _gophermv_requestAnimationFrame(f) {
   _gophermv_requestAnimationFrameCallbacks.push(f);
+}
+
+function _gophermv_processAnimationFrames() {
+  var n = _gophermv_requestAnimationFrameCallbacks.length;
+  var callbacks = _gophermv_requestAnimationFrameCallbacks.slice(0);
+  for (var i = 0; i < n; i++) {
+    callbacks[i]();
+  }
+  _gophermv_requestAnimationFrameCallbacks = _gophermv_requestAnimationFrameCallbacks.slice(n);
 }
 `
 

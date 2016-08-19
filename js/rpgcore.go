@@ -29,11 +29,6 @@ Graphics._createFPSMeter = function() {};
 Graphics._createModeBox = function() {};
 Graphics._createFontLoader = function() {};
 
-Graphics._setupEventHandlers = function() {
-  // Do nothing
-  // TODO: Set input handling
-};
-
 Graphics.isFontLoaded = function(name) {
   return true;
 };
@@ -54,11 +49,6 @@ WebAudio.prototype._load = function(url) {
   this._onLoad();
 };
 WebAudio.prototype._startPlaying = function() {};
-
-Input._setupEventHandlers = function() {
-  // Do nothing
-  // TODO: Set input handling
-};
 
 TouchInput._setupEventHandlers = function() {
   // Do nothing

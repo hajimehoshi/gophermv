@@ -124,58 +124,32 @@ func (vm *VM) loop() error {
 			vm.scripts = vm.scripts[1:]
 			continue
 		}
-		vm.context.GetGlobalString("_gophermv_onLoadCallbacks")
-		if n := vm.context.GetLength(-1); 0 < n {
-			vm.context.GetPropIndex(-1, 0)
-			if err := vm.intToError(vm.context.Pcall(0)); err != nil {
-				return err
-			}
-			vm.context.Pop()
-			vm.context.PushString("shift")
-			vm.context.CallProp(-2, 0)
-			vm.context.Pop()
 
-			vm.context.Pop()
+		vm.context.GetGlobalString("_gophermv_processOnLoadCallbacks")
+		if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+			return err
+		}
+		processed := vm.context.GetBoolean(-1)
+		vm.context.Pop()
+		if processed {
 			continue
 		}
-		vm.context.Pop()
 
 		vm.context.GetGlobalString("_gophermv_requestAnimationFrameCallbacks")
 		if n := vm.context.GetLength(-1); 0 < n {
 			vm.updatingFrameCh <- struct{}{}
 			<-vm.updatedFrameCh
-			vm.context.PushString("slice")
-			vm.context.PushInt(0)
-			vm.context.PushInt(n)
-			if err := vm.intToError(vm.context.PcallProp(-4, 2)); err != nil {
+			vm.context.GetGlobalString("_gophermv_processAnimationFrames")
+			if err := vm.intToError(vm.context.Pcall(0)); err != nil {
 				return err
 			}
-			for i := 0; i < n; i++ {
-				vm.context.GetPropIndex(-1, uint(i))
-				if err := vm.intToError(vm.context.Pcall(0)); err != nil {
-					return err
-				}
-				vm.context.Pop()
-			}
 			vm.context.Pop()
-
-			vm.context.PushString("slice")
-			vm.context.PushInt(n)
-			if err := vm.intToError(vm.context.PcallProp(-3, 1)); err != nil {
-				return err
-			}
-			vm.context.PushGlobalObject()
-			vm.context.Swap(-1, -2)
-			vm.context.PutPropString(-2, "_gophermv_requestAnimationFrameCallbacks")
-			vm.context.Pop()
-
 			vm.context.Pop()
 			continue
 		}
 		vm.context.Pop()
 	}
 }
-
 
 func detailedError(err error) error {
 	derr, ok := err.(*duktape.Error)
