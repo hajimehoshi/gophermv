@@ -38,7 +38,6 @@ SceneManager.run = function(sceneClass) {
 
 SceneManager.update = function() {
   this.tickStart();
-  this.updateInputData();
   this.updateMain();
   this.tickEnd();
 };
