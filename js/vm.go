@@ -114,7 +114,53 @@ func (vm *VM) intToError(result int) error {
 	return err
 }
 
+var (
+	keyCodes = map[ebiten.Key]int{
+		ebiten.KeyTab:      9,
+		ebiten.KeyEnter:    13,
+		ebiten.KeyShift:    16,
+		ebiten.KeyControl:  17,
+		ebiten.KeyAlt:      18,
+		ebiten.KeyEscape:   27,
+		ebiten.KeySpace:    32,
+		ebiten.KeyPageUp:   33,
+		ebiten.KeyPageDown: 34,
+		ebiten.KeyLeft:     37,
+		ebiten.KeyUp:       38,
+		ebiten.KeyRight:    39,
+		ebiten.KeyDown:     40,
+		ebiten.KeyInsert:   45,
+		ebiten.KeyQ:        81,
+		ebiten.KeyW:        87,
+		ebiten.KeyX:        88,
+		ebiten.KeyZ:        90,
+		ebiten.KeyF9:       120,
+	}
+)
+
+func (vm *VM) callEventHandlers(eventType string, key ebiten.Key) error {
+	vm.context.GetGlobalString("document")
+	vm.context.GetPropString(-1, "_callHandlers")
+	// this
+	vm.context.GetGlobalString("document")
+	// arg1
+	vm.context.PushString(eventType)
+	// arg2: Event object
+	vm.context.GetGlobalString("Event")
+	vm.context.New(0)
+	vm.context.PushInt(keyCodes[key])
+	vm.context.PutPropString(-2, "keyCode")
+
+	if err := vm.intToError(vm.context.PcallMethod(2)); err != nil {
+		return err
+	}
+	vm.context.Pop()
+	vm.context.Pop()
+	return nil
+}
+
 func (vm *VM) loop() error {
+	keyStates := map[ebiten.Key]int{}
 	for {
 		// vm.context.Gc(0)
 		if 0 < len(vm.scripts) {
@@ -133,6 +179,24 @@ func (vm *VM) loop() error {
 		vm.context.Pop()
 		if processed {
 			continue
+		}
+
+		for key := range keyCodes {
+			if ebiten.IsKeyPressed(key) {
+				if keyStates[key] == 0 {
+					if err := vm.callEventHandlers("keydown", key); err != nil {
+						return err
+					}
+				}
+				keyStates[key]++
+			} else {
+				if keyStates[key] != 0 {
+					if err := vm.callEventHandlers("keyup", key); err != nil {
+						return err
+					}
+				}
+				keyStates[key] = 0
+			}
 		}
 
 		vm.context.GetGlobalString("_gophermv_requestAnimationFrameCallbacks")

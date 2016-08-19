@@ -87,6 +87,7 @@ Object.defineProperty(Document.prototype, 'body', {
 
 Document.prototype.initialize = function() {
   this._body = new HTMLBodyElement();
+  this._handlers = {};
 };
 
 Document.prototype.createElement = function(name) {
@@ -112,7 +113,30 @@ Document.prototype.addEventListener = function(type, func) {
   default:
     throw new Error('addEventListener: not supported type: ' + type);
   }
+  if (this._handlers[type] === undefined) {
+    this._handlers[type] = [];
+  }
+  this._handlers[type].push(func);
 };
+
+Document.prototype._callHandlers = function(type, e) {
+  var handlers = this._handlers[type];
+  for (var i = 0; i < handlers.length; i++) {
+    handlers[i](e);
+  }
+}
+
+function Event(typeArg, eventInit) {
+}
+
+Object.defineProperty(Event.prototype, 'keyCode', {
+  get: function() { return this._keyCode; },
+  set: function(value) { this._keyCode = value; },
+})
+
+Event.prototype.preventDefault = function() {
+  // Do nothing
+}
 
 function HTMLElement() {
 }
