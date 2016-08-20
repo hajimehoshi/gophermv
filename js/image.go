@@ -344,6 +344,8 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 	align := alignLeft
 	switch alignStr {
 	case "left":
+		fallthrough
+	case "start":
 		align = alignLeft
 	case "center":
 		align = alignCenter
