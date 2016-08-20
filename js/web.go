@@ -411,6 +411,8 @@ CanvasRenderingContext2D.prototype.fill = function() {
 CanvasRenderingContext2D.prototype.createPattern = function(img, style) {
   // Used at TilingSprite.prototype._renderCanvas
   // TODO: Implement this?
+  // Return a temporary value in order not to keep TilingSprite._canvasPattern undefined.
+  return '#000';
 };
 
 (function() {

@@ -233,6 +233,7 @@ func detailedError(err error) error {
 func (vm *VM) Run() error {
 	vmError := make(chan error)
 	gameStarted := make(chan struct{})
+	// TODO: Do we really have to have a goroutine?
 	go func() {
 		<-gameStarted
 		vmError <- vm.loop()
