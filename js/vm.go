@@ -181,6 +181,9 @@ func (vm *VM) loop() error {
 			continue
 		}
 
+		vm.updatingFrameCh <- struct{}{}
+		<-vm.updatedFrameCh
+
 		for key := range keyCodes {
 			if ebiten.IsKeyPressed(key) {
 				if keyStates[key] == 0 {
@@ -199,19 +202,15 @@ func (vm *VM) loop() error {
 			}
 		}
 
-		vm.context.GetGlobalString("_gophermv_requestAnimationFrameCallbacks")
-		if n := vm.context.GetLength(-1); 0 < n {
-			vm.updatingFrameCh <- struct{}{}
-			<-vm.updatedFrameCh
-			vm.context.GetGlobalString("_gophermv_processAnimationFrames")
-			if err := vm.intToError(vm.context.Pcall(0)); err != nil {
-				return err
-			}
-			vm.context.Pop()
-			vm.context.Pop()
+		vm.context.GetGlobalString("_gophermv_processAnimationFrames")
+		if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+			return err
+		}
+		processed = vm.context.GetBoolean(-1)
+		vm.context.Pop()
+		if processed {
 			continue
 		}
-		vm.context.Pop()
 	}
 }
 

@@ -617,11 +617,15 @@ function _gophermv_requestAnimationFrame(f) {
 
 function _gophermv_processAnimationFrames() {
   var n = _gophermv_requestAnimationFrameCallbacks.length;
+  if (n === 0) {
+    return false;
+  }
   var callbacks = _gophermv_requestAnimationFrameCallbacks.slice(0);
   for (var i = 0; i < n; i++) {
     callbacks[i]();
   }
   _gophermv_requestAnimationFrameCallbacks = _gophermv_requestAnimationFrameCallbacks.slice(n);
+  return true;
 }
 `
 
