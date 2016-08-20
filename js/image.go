@@ -305,17 +305,7 @@ func jsEbitenImageFillRect(vm *VM) (int, error) {
 	return 0, nil
 }
 
-func jsEbitenImageDrawText(vm *VM) (int, error) {
-	img := vm.getEbitenImage(0)
-	text := vm.context.GetString(1)
-	x := vm.context.GetInt(2)
-	y := vm.context.GetInt(3)
-	maxWidth := vm.context.GetInt(4)
-	font := vm.context.GetString(5)
-	alignStr := vm.context.GetString(6)
-	clr := vm.context.GetInt(7)
-	lineWidth := vm.context.GetInt(8)
-	r, g, b, a := intColorToNRGBA(clr)
+func fontSize(font string) (int, error) {
 	size := 0
 	re := regexp.MustCompile(`^(\d+)px$`)
 	for _, t := range strings.Split(font, " ") {
@@ -333,6 +323,24 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 	if size == 0 {
 		return 0, fmt.Errorf("invalid font: %s", font)
 	}
+	return size, nil
+}
+
+func jsEbitenImageDrawText(vm *VM) (int, error) {
+	img := vm.getEbitenImage(0)
+	text := vm.context.GetString(1)
+	x := vm.context.GetInt(2)
+	y := vm.context.GetInt(3)
+	maxWidth := vm.context.GetInt(4)
+	font := vm.context.GetString(5)
+	alignStr := vm.context.GetString(6)
+	clr := vm.context.GetInt(7)
+	lineWidth := vm.context.GetInt(8)
+	r, g, b, a := intColorToNRGBA(clr)
+	size, err := fontSize(font)
+	if err != nil {
+		return 0, err
+	}
 	align := alignLeft
 	switch alignStr {
 	case "left":
@@ -349,6 +357,22 @@ func jsEbitenImageDrawText(vm *VM) (int, error) {
 		return 0, err
 	}
 	return 0, nil
+}
+
+func jsEbitenMeasureText(vm *VM) (int, error) {
+	text := vm.context.GetString(0)
+	font := vm.context.GetString(1)
+	size, err := fontSize(font)
+	if err != nil {
+		return 0, err
+	}
+	width, height := vm.font.measureText(text, size)
+	vm.context.PushObject()
+	vm.context.PushInt(width)
+	vm.context.PutPropString(-2, "width")
+	vm.context.PushInt(height)
+	vm.context.PutPropString(-2, "height")
+	return 1, nil
 }
 
 func jsEbitenImageDrawImage(vm *VM) (int, error) {
@@ -419,6 +443,10 @@ func (vm *VM) initEbitenImage() error {
 	}
 	vm.context.Pop()
 	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenImageDrawText", wrapFunc(jsEbitenImageDrawText, vm)); err != nil {
+		return err
+	}
+	vm.context.Pop()
+	if _, err := vm.context.PushGlobalGoFunction("_gophermv_ebitenMeasureText", wrapFunc(jsEbitenMeasureText, vm)); err != nil {
 		return err
 	}
 	vm.context.Pop()

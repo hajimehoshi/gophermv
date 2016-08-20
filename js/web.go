@@ -333,6 +333,32 @@ CanvasRenderingContext2D.prototype.setTransform = function(a, b, c, d, tx, ty) {
   state['transform'] = [a, b, c, d, tx, ty];
 };
 
+CanvasRenderingContext2D.prototype.scale = function(x, y) {
+  var state = this._stateStack[this._stateStack.length - 1];
+  var transform = state['transform'] || [1, 0, 0, 1, 0, 0];
+  var newTransform = [];
+  newTransform[0] = transform[0] * x;
+  newTransform[1] = transform[1] * y;
+  newTransform[2] = transform[2] * x;
+  newTransform[3] = transform[3] * y;
+  newTransform[4] = transform[4];
+  newTransform[5] = transform[5];
+  state['transform'] = newTransform;
+};
+
+CanvasRenderingContext2D.prototype.translate = function(x, y) {
+  var state = this._stateStack[this._stateStack.length - 1];
+  var transform = state['transform'] || [1, 0, 0, 1, 0, 0];
+  var newTransform = [];
+  newTransform[0] = transform[0];
+  newTransform[1] = transform[1];
+  newTransform[2] = transform[2];
+  newTransform[3] = transform[3];
+  newTransform[4] = transform[4] + x;
+  newTransform[5] = transform[5] + y;
+  state['transform'] = newTransform;
+};
+
 CanvasRenderingContext2D.prototype.strokeText = function(text, tx, ty, maxWidth) {
   // Note that this doesn't draw only strokes.
   if (this.lineJoin !== 'round') {
@@ -346,6 +372,10 @@ CanvasRenderingContext2D.prototype.fillText = function(text, tx, ty, maxWidth) {
     throw new Error('not supported textBaseLine: ' + this.textBaseline);
   }
   _gophermv_ebitenImageDrawText(this._canvas._ebitenImage, text, tx, ty, maxWidth, this.font, this.textAlign, this._colorStrToInt(this.fillStyle), 0);
+};
+
+CanvasRenderingContext2D.prototype.measureText = function(text) {
+  return _gophermv_ebitenMeasureText(text, this.font);
 };
 
 CanvasRenderingContext2D.prototype.beginPath = function() {
@@ -368,11 +398,33 @@ CanvasRenderingContext2D.prototype.rect = function(x, y, width, height) {
   // TODO: Implement this?
 };
 
+CanvasRenderingContext2D.prototype.arc = function() {
+  // Used at Bitmap.prototype.drawCircle
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.fill = function() {
+  // Used at Bitmap.prototype.drawCircle
+  // TODO: Implement this?
+};
+
+CanvasRenderingContext2D.prototype.createPattern = function(img, style) {
+  // Used at TilingSprite.prototype._renderCanvas
+  // TODO: Implement this?
+};
+
 (function() {
   function clone(style) {
     var result = {};
     for (var attr in style) {
       if (!style.hasOwnProperty(attr)) {
+        continue;
+      }
+      if (Array.isArray(style[attr])) {
+        result[attr] = [];
+        for (var i = 0; i < style[attr].length; i++) {
+          result[attr][i] = style[attr][i];
+        }
         continue;
       }
       result[attr] = style[attr];
@@ -466,6 +518,8 @@ CanvasRenderingContext2D.prototype._colorStrToInt = function(str) {
     color = (r << 24) | (g << 16) | (b << 8);
   } else if (str === 'black') {
     color = 0xff;
+  } else if (str === 'white') {
+    color = 0xffffffff;
   } else {
     throw new Error('invalid style format: ' + str);
   }

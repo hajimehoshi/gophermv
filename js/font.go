@@ -142,8 +142,11 @@ func makePixelsFat(origPix []uint8, width, height int, stride int, radius int) [
 	return pix
 }
 
+const (
+	fontDPI = 72
+)
+
 func (f *font) drawText(img *ebiten.Image, text string, size, lineWidth int, x, y int, maxWidth int, align align, clr color.Color) error {
-	const dpi = 72
 	const imgWidth = 800
 	const imgHeight = 600
 	if f.textImg == nil {
@@ -152,7 +155,7 @@ func (f *font) drawText(img *ebiten.Image, text string, size, lineWidth int, x, 
 	draw.Draw(f.textImg, f.textImg.Bounds(), image.Transparent, image.ZP, draw.Src)
 	face := truetype.NewFace(f.tt, &truetype.Options{
 		Size:    float64(size),
-		DPI:     dpi,
+		DPI:     fontDPI,
 		Hinting: gofont.HintingFull,
 	})
 	width := gofont.MeasureString(face, text).Ceil()
@@ -189,4 +192,14 @@ func (f *font) drawText(img *ebiten.Image, text string, size, lineWidth int, x, 
 		return err
 	}
 	return nil
+}
+
+func (f *font) measureText(text string, size int) (int, int) {
+	face := truetype.NewFace(f.tt, &truetype.Options{
+		Size:    float64(size),
+		DPI:     fontDPI,
+		Hinting: gofont.HintingFull,
+	})
+	width := gofont.MeasureString(face, text).Ceil()
+	return width, size
 }
