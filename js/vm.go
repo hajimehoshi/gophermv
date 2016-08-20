@@ -30,7 +30,7 @@ type VM struct {
 	pwd             string
 	context         *duktape.Context
 	scripts         []string
-	updatingFrameCh chan struct{}
+	updatingFrameCh chan *ebiten.Image
 	updatedFrameCh  chan struct{}
 	lastImageID     int
 	font            *font
@@ -40,7 +40,7 @@ func NewVM(pwd string) (*VM, error) {
 	vm := &VM{
 		pwd:             pwd,
 		context:         duktape.New(),
-		updatingFrameCh: make(chan struct{}),
+		updatingFrameCh: make(chan *ebiten.Image),
 		updatedFrameCh:  make(chan struct{}),
 	}
 	var err error
@@ -180,38 +180,46 @@ func (vm *VM) loop() error {
 		if processed {
 			continue
 		}
-
-		vm.updatingFrameCh <- struct{}{}
-		<-vm.updatedFrameCh
-
-		for key := range keyCodes {
-			if ebiten.IsKeyPressed(key) {
-				if keyStates[key] == 0 {
-					if err := vm.callEventHandlers("keydown", key); err != nil {
-						return err
-					}
-				}
-				keyStates[key]++
-			} else {
-				if keyStates[key] != 0 {
-					if err := vm.callEventHandlers("keyup", key); err != nil {
-						return err
-					}
-				}
-				keyStates[key] = 0
-			}
-		}
-
-		vm.context.GetGlobalString("_gophermv_processAnimationFrames")
-		if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+		if err := vm.update(keyStates); err != nil {
 			return err
 		}
-		processed = vm.context.GetBoolean(-1)
-		vm.context.Pop()
-		if processed {
-			continue
+	}
+}
+
+func (vm *VM) update(keyStates map[ebiten.Key]int) error {
+	screen := <-vm.updatingFrameCh
+	defer func() {
+		vm.updatedFrameCh <- struct{}{}
+	}()
+
+	for key := range keyCodes {
+		if ebiten.IsKeyPressed(key) {
+			if keyStates[key] == 0 {
+				if err := vm.callEventHandlers("keydown", key); err != nil {
+					return err
+				}
+			}
+			keyStates[key]++
+		} else {
+			if keyStates[key] != 0 {
+				if err := vm.callEventHandlers("keyup", key); err != nil {
+					return err
+				}
+			}
+			keyStates[key] = 0
 		}
 	}
+
+	vm.context.GetGlobalString("_gophermv_processAnimationFrames")
+	if err := vm.intToError(vm.context.Pcall(0)); err != nil {
+		return err
+	}
+	vm.context.GetBoolean(-1)
+	vm.context.Pop()
+	if err := vm.updateScreen(screen); err != nil {
+		return err
+	}
+	return nil
 }
 
 func detailedError(err error) error {
@@ -234,11 +242,8 @@ func (vm *VM) Run() error {
 		case gameStarted <- struct{}{}:
 			close(gameStarted)
 			gameStarted = nil
-		case <-vm.updatingFrameCh:
-			if err := vm.updateScreen(screen); err != nil {
-				return err
-			}
-			vm.updatedFrameCh <- struct{}{}
+		case vm.updatingFrameCh <- screen:
+			<-vm.updatedFrameCh
 		case err := <-vmError:
 			return err
 		}
@@ -252,10 +257,6 @@ func (vm *VM) Run() error {
 }
 
 func (vm *VM) updateScreen(screen *ebiten.Image) error {
-	type canvas struct {
-		image  *ebiten.Image
-		zIndex int
-	}
 	if err := vm.context.PevalString("document.body._canvasEbitenImages()"); err != nil {
 		return err
 	}
